@@ -19,9 +19,12 @@ int yywrap();
 }
 %token <ival> BOOL
 %token <sval> CERT
+%token <sval> CHANNEL
 %token <sval> COLON
 %token <sval> COMMENT
 %token <ival> DAEMON
+%token <sval> DBLQUOTE
+%token <sval> DBLQUOTEDSTRING
 %token <ival> DEBUGMODE
 %token <sval> FILENAME
 %token <sval> KEY
@@ -42,6 +45,16 @@ configs:
 config:
 	COMMENT
 	{ /* skip comment */ }
+	|
+	CHANNEL DBLQUOTEDSTRING
+	{
+		fprintf(stderr, "joining channel '%s'\n", $2);
+	}
+	|
+	CHANNEL WORD
+	{
+		fprintf(stderr, "joining channel '%s'\n", $2);
+	}
 	|
 	DAEMON BOOL
 	{
