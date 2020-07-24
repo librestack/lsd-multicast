@@ -1,6 +1,6 @@
 lex.yy.c
 y.tab.c
 y.tab.h
-lsdb
+lsdbd
 *.swp
 *.o
