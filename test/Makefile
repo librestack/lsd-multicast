@@ -2,7 +2,7 @@
 # Copyright (c) 2020 Brett Sheffield <bacs@librecast.net>
 
 CFLAGS += -Wall
-OBJS = test.o ../src/config.o ../src/lex.yy.o ../src/y.tab.o
+OBJS = test.o ../src/lex.yy.o ../src/y.tab.o ../src/[!lsdbd,lex\.yy,y\.tab]*.o
 LIBS = -llibrecast
 PASS = "\\e[0m\\e[32m" # end bold, green text
 FAIL = "\\e[0m\\e[31m" # end bold, red text
