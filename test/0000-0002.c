@@ -8,7 +8,10 @@ int main()
 {
 	test_name("read config");
 
-	config_parse();
+	test_assert(config_include("./0000-0002.does_not_exist") == -1,
+			"config_include returns -1 if file does not exist");
+
+	config_include("./0000-0002.conf");
 
 	return fails;
 }

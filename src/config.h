@@ -18,6 +18,7 @@ struct config_s {
 extern config_t config;
 
 void	config_free();
+int	config_include(char *configfile);
 int	config_parse();
 void	yylex_destroy();
 
