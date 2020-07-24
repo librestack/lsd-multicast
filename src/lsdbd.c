@@ -8,12 +8,13 @@
 #include "config.h"
 #include "opts.h"
 #include "lsdbd.h"
+#include "server.h"
 
 int main(int argc, char *argv[])
 {
 	opts_parse(argc, argv);
 	config_parse();
+	server_start();
 	config_free();
 	return 0;
 }
-
