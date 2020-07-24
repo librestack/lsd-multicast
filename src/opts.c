@@ -13,6 +13,14 @@ int opts_parse(int argc, char *argv[])
 			config.debug = 1;
 			config.loglevel = CONFIG_LOGLEVEL_MAX;
 		}
+		else if (!strcmp(argv[i], "-c") || !strcmp(argv[i], "--config")) {
+			i++;
+			if (i == argc) {
+				fprintf(stderr, "-c/--config requires filename\n");
+				return -1;
+			}
+			config.configfile = strdup(argv[i]);
+		}
 		else if (!strcmp(argv[i], "-q") || !strcmp(argv[i], "--quiet")) {
 			config.loglevel = 0;
 		}
@@ -20,6 +28,7 @@ int opts_parse(int argc, char *argv[])
 			config.loglevel = CONFIG_LOGLEVEL_MAX;
 		}
 		else {
+			fprintf(stderr, "unknown option %s\n", argv[i]);
 			return -1;
 		}
 	}

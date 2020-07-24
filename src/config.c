@@ -10,9 +10,16 @@ config_t config = {
 	.loglevel = 0,
 };
 
+void config_free_ptr(void *ptr)
+{
+	free(ptr);
+	ptr = NULL;
+}
+
 void config_free()
 {
-	free(config.key);
+	config_free_ptr(config.configfile);
+	config_free_ptr(config.key);
 }
 
 int config_parse()

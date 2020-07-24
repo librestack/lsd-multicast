@@ -12,6 +12,7 @@ typedef struct config_s config_t;
 struct config_s {
 	int	debug;
 	int	loglevel;
+	char *	configfile;
 	char *	key;
 };
 extern config_t config;
