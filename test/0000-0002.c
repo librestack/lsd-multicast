@@ -19,7 +19,8 @@ int main()
 	test_assert(config.debug, "debug set from config file");
 
 	test_strcmp(config.key, "/path/to/key", "config.key set from config file");
-	test_strcmp(config.cert, "/path/to/cert", "config.key set from config file");
+	test_strcmp(config.cert, "/path/to/cert", "config.cert set from config file");
+
 	config_free();
 
 	return fails;
