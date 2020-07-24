@@ -10,7 +10,7 @@ $(PROGRAM): $(OBJS)
 
 $(PROGRAM).o:	$(PROGRAM).h
 
-config.o: config.h
+config.o: config.h lex.h
 
 opts.o: opts.h
 
@@ -24,8 +24,8 @@ y.tab.h: grammar.y
 y.tab.c: grammar.y
 	$(YACC) $^
 
-lex.yy.c: lexer.l y.tab.h
-	$(LEX) lexer.l
+lex.h lex.yy.c: lexer.l y.tab.h
+	$(LEX) --header-file=lex.h lexer.l
 
 .PHONY: clean
 

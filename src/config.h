@@ -20,6 +20,5 @@ extern config_t config;
 void	config_free();
 int	config_include(char *configfile);
 int	config_parse();
-void	yylex_destroy();
 
 #endif /* _LSDBD_CONFIG_H */

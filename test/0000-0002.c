@@ -12,6 +12,8 @@ int main()
 			"config_include returns -1 if file does not exist");
 
 	config_include("./0000-0002.conf");
+	test_assert(config.loglevel == 64, "loglevel set from config file");
+	test_assert(config.debug, "debug set from config file");
 
 	return fails;
 }

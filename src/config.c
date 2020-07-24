@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "config.h"
-#include "y.tab.h"
+#include "lex.h"
 
 config_t config = {
 	.loglevel = 0,
@@ -31,6 +31,10 @@ int config_include(char *configfile)
 		perror(__func__);
 		return -1;
 	}
+	yyin = fd;
+	yypush_buffer_state(yy_create_buffer(yyin, YY_BUF_SIZE));
+	while (yyparse());
+	yylex_destroy();
 	fclose(fd);
 	return 0;
 }

@@ -22,6 +22,7 @@ int yywrap();
 %token <sval> COLON
 %token <sval> COMMENT
 %token <ival> DAEMON
+%token <ival> DEBUG
 %token <sval> FILENAME
 %token <sval> KEY
 %token <ival> LOGLEVEL
@@ -45,21 +46,29 @@ config:
 	DAEMON BOOL
 	{
 		if ($2)
-			printf("daemonizing\n");
+			fprintf(stderr, "daemonizing\n");
 		else
-			printf("no daemon for you\n");
+			fprintf(stderr, "no daemon for you\n");
+	}
+	|
+	DEBUG BOOL
+	{
+		if ($2) {
+			config.debug = ($2) ? 1 : 0;
+			fprintf(stderr, "debug mode enabled\n");
+		}
 	}
 	|
 	LOGLEVEL NUMBER
 	{
-		printf("loglevel set to %i\n", $2);
+		fprintf(stderr, "loglevel set to %i\n", $2);
 		config.loglevel = $2;
 	}
 	|
 	KEY FILENAME
 	{
 		config.key = $2;
-		printf("key is '%s'\n", config.key);
+		fprintf(stderr, "key is '%s'\n", config.key);
 	}
 	|
 	PROTO WORD NUMBER SLASH WORD V6ADDR
