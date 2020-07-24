@@ -11,9 +11,16 @@ int main()
 	test_assert(config_include("./0000-0002.does_not_exist") == -1,
 			"config_include returns -1 if file does not exist");
 
+	test_assert(config.key == NULL, "config.key defaults to NULL");
+
 	config_include("./0000-0002.conf");
 	test_assert(config.loglevel == 64, "loglevel set from config file");
+	test_assert(config.daemon, "daemon set from config file");
 	test_assert(config.debug, "debug set from config file");
+
+	test_strcmp(config.key, "/path/to/key", "config.key set from config file");
+	test_strcmp(config.cert, "/path/to/cert", "config.key set from config file");
+	config_free();
 
 	return fails;
 }

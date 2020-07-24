@@ -35,7 +35,7 @@ void test_assert(int condition, char *msg, ...)
 
 void test_strcmp(char *str1, char *str2, char *msg, ...)
 {
-	if (strcmp(str1, str2)) {
+	if (str1 == NULL || str2 == NULL || strcmp(str1, str2)) {
 		va_list argp;
 		va_start(argp, msg);
 		vfail_msg(msg, argp);

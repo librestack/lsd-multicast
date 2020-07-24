@@ -10,10 +10,12 @@
 
 typedef struct config_s config_t;
 struct config_s {
+	int	daemon;
 	int	debug;
 	int	loglevel;
 	char *	configfile;
 	char *	key;
+	char *	cert;
 };
 extern config_t config;
 

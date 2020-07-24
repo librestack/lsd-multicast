@@ -19,6 +19,7 @@ void config_free_ptr(void *ptr)
 
 void config_free()
 {
+	config_free_ptr(config.cert);
 	config_free_ptr(config.configfile);
 	config_free_ptr(config.key);
 }

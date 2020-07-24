@@ -45,16 +45,16 @@ config:
 	|
 	DAEMON BOOL
 	{
-		if ($2)
+		if ($2) {
 			fprintf(stderr, "daemonizing\n");
-		else
-			fprintf(stderr, "no daemon for you\n");
+			config.daemon = 1;
+		}
 	}
 	|
 	DEBUG BOOL
 	{
 		if ($2) {
-			config.debug = ($2) ? 1 : 0;
+			config.debug = 1;
 			fprintf(stderr, "debug mode enabled\n");
 		}
 	}
@@ -67,17 +67,15 @@ config:
 	|
 	KEY FILENAME
 	{
+		fprintf(stderr, "key = '%s'\n", $2);
 		config.key = $2;
-		fprintf(stderr, "key is '%s'\n", config.key);
 	}
 	|
-	PROTO WORD NUMBER SLASH WORD V6ADDR
-	|
-	PROTO WORD NUMBER SLASH WORD
-	|
-	PROTO WORD NUMBER
-	|
-	PROTO WORD
+	CERT FILENAME
+	{
+		fprintf(stderr, "cert = '%s'\n", $2);
+		config.cert = $2;
+	}
 	;
 %%
 void yyerror(const char *str)
