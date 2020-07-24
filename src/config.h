@@ -6,8 +6,11 @@
 
 #include "y.tab.h"
 
+#define CONFIG_LOGLEVEL_MAX 127
+
 typedef struct config_s config_t;
 struct config_s {
+	int	debug;
 	int	loglevel;
 	char *	key;
 };

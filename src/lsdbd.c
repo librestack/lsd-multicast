@@ -6,10 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "config.h"
+#include "opts.h"
 #include "lsdbd.h"
 
-int main()
+int main(int argc, char *argv[])
 {
+	opts_parse(argc, argv);
 	config_parse();
 	config_free();
 	return 0;

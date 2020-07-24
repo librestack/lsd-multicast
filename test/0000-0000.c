@@ -6,9 +6,11 @@
 
 int main()
 {
-	test_name("read config");
+	test_name("config defaults");
 
-	config_parse();
+	test_assert(!config.debug, "defaults debug false");
+	test_assert(config.loglevel == 0, "default loglevel == 0");
+	test_assert(config.key == NULL, "config.key default == NULL");
 
-	return 0;
+	return fails;
 }
