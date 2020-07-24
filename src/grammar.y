@@ -22,7 +22,7 @@ int yywrap();
 %token <sval> COLON
 %token <sval> COMMENT
 %token <ival> DAEMON
-%token <ival> DEBUG
+%token <ival> DEBUGMODE
 %token <sval> FILENAME
 %token <sval> KEY
 %token <ival> LOGLEVEL
@@ -51,7 +51,7 @@ config:
 		}
 	}
 	|
-	DEBUG BOOL
+	DEBUGMODE BOOL
 	{
 		if ($2) {
 			config.debug = 1;

@@ -3,7 +3,7 @@
 
 PROGRAM = lsdbd
 CFLAGS += -Wall -g
-OBJS = lex.yy.o y.tab.o config.o opts.o $(PROGRAM).o
+OBJS = lex.yy.o y.tab.o config.o log.o opts.o $(PROGRAM).o
 
 $(PROGRAM): $(OBJS)
 	$(CC) $(OBJS) -o $@ -llibrecast

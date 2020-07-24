@@ -10,7 +10,7 @@ int lineno = 1;
 %%
 cert				return CERT;
 daemon				return DAEMON;
-debug				return DEBUG;
+debug				return DEBUGMODE;
 false|true			yylval.ival = strcmp(yytext, "false"); return BOOL;
 key				return KEY;
 loglevel			return LOGLEVEL;
