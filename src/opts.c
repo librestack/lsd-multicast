@@ -13,8 +13,15 @@ int opts_parse(int argc, char *argv[])
 			config.debug = 1;
 			config.loglevel = CONFIG_LOGLEVEL_MAX;
 		}
+		else if (!strcmp(argv[i], "-q") || !strcmp(argv[i], "--quiet")) {
+			config.loglevel = 0;
+		}
+		else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "--verbose")) {
+			config.loglevel = CONFIG_LOGLEVEL_MAX;
+		}
 		else {
 			return -1;
 		}
 	}
+	return 0;
 }
