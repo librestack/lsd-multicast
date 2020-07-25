@@ -48,13 +48,20 @@ void test_expect(char *expected, char *got)
 	test_strcmp(expected, got, "expected: '%s', got: '%s'", expected, got);
 }
 
-void test_log(char *msg)
+void test_log(char *msg, ...)
 {
-	fprintf(stderr, "  (%s)\n", msg);
+	char *b;
+	va_list argp;
+	va_start(argp, msg);
+	b = malloc(_vscprintf(msg, argp) + 1);
+	vsprintf(b, msg, argp);
+	fprintf(stderr, "%s\n", b);
+	va_end(argp);
+	free(b);
 }
 
 void test_name(char *str)
 {
 	printf("%-70s", str);
-	test_log(str);
+	test_log("  (%s)", str);
 }
