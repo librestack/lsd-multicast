@@ -32,4 +32,7 @@ lex.h lex.yy.c: lexer.l y.tab.h
 .PHONY: clean
 
 clean:
-	rm -f y.tab.c y.tab.h lex.yy.c lex.h *.o $(PROGRAM)
+	rm -f *.o $(PROGRAM)
+
+realclean: clean
+	rm -f y.tab.c y.tab.h lex.yy.c lex.h
