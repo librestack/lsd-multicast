@@ -48,7 +48,13 @@ void test_expect(char *expected, char *got)
 	test_strcmp(expected, got, "expected: '%s', got: '%s'", expected, got);
 }
 
+void test_log(char *msg)
+{
+	fprintf(stderr, "  (%s)\n", msg);
+}
+
 void test_name(char *str)
 {
 	printf("%-70s", str);
+	test_log(str);
 }

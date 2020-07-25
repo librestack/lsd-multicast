@@ -25,7 +25,7 @@ build:
 %.test: %.c $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 	@echo -ne "\e[2m" $* " "
-	@echo -e "\n== $@" >> $(LOGFILE)
+	@echo -ne "\n== $@" >> $(LOGFILE)
 	@$(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)OK\e[0m" || echo -e " $(FAIL)FAIL\e[0m"
 	@$(eval tests_run=$(shell echo $$(($(tests_run)+1))))
 
