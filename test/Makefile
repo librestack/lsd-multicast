@@ -11,7 +11,7 @@ TIMESTAMP = $(shell date +"%Y-%m-%d %H:%M:%S")
 
 .PHONY: test clean realclean build result memcheck
 
-memcheck: MEMCHECK = valgrind -q --leak-check=full --error-exitcode=2 --errors-for-leak-kinds=all
+memcheck: MEMCHECK = valgrind --leak-check=full --error-exitcode=2 --errors-for-leak-kinds=all --log-file=$@.valgrind
 memcheck: test
 
 test: clean build $(shell echo ????-????.c | sed 's/\.c/\.test/g') result
@@ -39,4 +39,4 @@ clean:
 	@rm -f $(LOGFILE)
 
 realclean: clean
-	rm -f lsdb-test-????????.log
+	rm -f lsdb-test-????????.log* ????-????.test.valgrind
