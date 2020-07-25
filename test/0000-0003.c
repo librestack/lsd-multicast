@@ -2,6 +2,7 @@
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
 #include "test.h"
+#include "../src/config.h"
 #include "../src/server.h"
 #include <librecast.h>
 #include <signal.h>
@@ -12,7 +13,7 @@ int gotmsg = 0;
 void callback_recv(lc_message_t *msg)
 {
 	pid_t pid = getpid();
-	fprintf(stdout, "got a msg");
+	fprintf(stdout, "got a msg\n");
 	gotmsg = 1;
 	kill(pid, SIGUSR1); /* interrupt sleep() */
 }
@@ -20,6 +21,9 @@ void callback_recv(lc_message_t *msg)
 int main()
 {
 	test_name("ping server");
+
+	config.debug = 1;
+	config.loglevel = 127;
 
 	server_start();
 
