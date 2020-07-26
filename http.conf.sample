@@ -1,0 +1,32 @@
+# httpd config sample
+
+# global configs
+loglevel 127
+daemon true	# daemonize
+debug true
+
+module	http-module {
+	# module-specific options here
+	document_root	= /var/www
+	access_log	= /var/log/httpd/access.log
+}
+socket	80/tcp		lo,eth0
+socket	443/tcp		lo,eth0
+listen	80/tcp		::1
+listen	443/tcp
+proto	http		http-module
+proto	https		http-module
+
+uri     http:///css/*	GET   static ./css/
+uri     http:///*	GET   static ./index.html
+
+option	http://one.example.com/	{ key = value } # single option per uri
+option	http://two.example.com/ {
+	# multiple virtualhost options here
+	key1	= value
+	key2	= value
+}
+auth	http://one.example.com/	pam {
+	sufficient	user	sysop
+	require		group	wwwusers
+}

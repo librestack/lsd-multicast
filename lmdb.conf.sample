@@ -1,0 +1,43 @@
+# lmdb multicast database server
+
+# global configs
+loglevel 127
+daemon true	# daemonize
+debug true
+
+# options can be specifed per protocol or uri
+module	lmdb-module.so {
+	# env
+	mapsize = 10485760
+	maxreaders = 126
+	maxdbs = 42
+}
+proto	lmdb	lmdb-module.so
+
+# simple
+listen	3001/udp ff1e + sha3("mydb channel")
+uri	lmdb://[ff1e + sha3("mydb channel")]:3001/path/to/database1/
+
+# alternative
+socket	sock1 = 3001/udp
+channel chan1 = ff1e + sha3("mydb channel")
+bind	sock1	chan1
+uri	lmdb://$sock1/path/to/database1/ {
+	# per-database options here
+	flags = MDB_DUPSORT | MDB_INTEGERKEY
+}
+
+auth	lmdb://$sock1/path/to/database/ token {
+	# auth requires cap token signed by this key
+	required key 41af286dc0b172ed2f1ca934fd2278de4a1192302ffa07087cea2682e7d372e3
+}
+
+schema	db1 { # db1 is a named database
+	# general db options
+	key1 {
+		# options for this key
+	}
+	key2 {
+		# options for this key
+	}
+}
