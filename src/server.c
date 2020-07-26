@@ -2,9 +2,7 @@
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
 #include <librecast.h>
-#include <signal.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
 #include "config.h"
 #include "log.h"
@@ -14,7 +12,7 @@ lc_ctx_t *lctx;
 lc_socket_t *sock;
 lc_channel_t *chan;
 
-void *server_message_recv(lc_message_t *msg)
+void server_message_recv(lc_message_t *msg)
 {
 	DEBUG("server received message");
 }
