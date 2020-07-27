@@ -3,7 +3,7 @@
 
 INSTALLDIR=/usr/local/bin
 
-.PHONY: all clean src test memcheck install
+.PHONY: all clean src test check install
 
 all: src
 
@@ -18,5 +18,7 @@ clean:
 realclean:
 	cd src && $(MAKE) $@
 	cd test && $(MAKE) $@
-memcheck test:
+check test:
 	cd test && $(MAKE) $@
+%.test %.check:
+	cd test && $(MAKE) -B $@

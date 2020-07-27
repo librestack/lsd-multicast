@@ -4,15 +4,18 @@
 CFLAGS += -Wall
 OBJS := test.o ../src/lex.yy.o ../src/y.tab.o $(filter-out ../src/lsdbd.o, $(wildcard ../src/*.o))
 LIBS := -llibrecast
-PASS := "\\e[0m\\e[32m" # end bold, green text
-FAIL := "\\e[0m\\e[31m" # end bold, red text
+PASS = "\\e[0m\\e[32mOK\\e[0m" # end bold, green text
+FAIL = "\\e[0m\\e[31mFAIL\\e[0m" # end bold, red text
+LEAK = "\\e[0m\\e[31mFAIL \| LEAK\\e[0m\\n\\tSee $@.valgrind"
 LOGFILE := $(shell mktemp "lsdb-test-XXXXXXXX.log")
 TIMESTAMP = $(shell date +"%Y-%m-%d %H:%M:%S")
+VALGRIND = valgrind --leak-check=full --error-exitcode=2 --errors-for-leak-kinds=all --log-file=$@.valgrind
 
-.PHONY: test clean realclean build result memcheck
+.PHONY: test clean realclean build result check
 
-memcheck: MEMCHECK = valgrind --leak-check=full --error-exitcode=2 --errors-for-leak-kinds=all --log-file=$@.valgrind
-memcheck: test
+check: MEMCHECK = $(VALGRIND)
+check: FAIL = $(LEAK)
+check: test
 
 test: clean build $(shell echo ????-????.c | sed 's/\.c/\.test/g') result
 
@@ -25,8 +28,13 @@ build:
 	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
-	@$(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)OK\e[0m" || echo -e " $(FAIL)FAIL\e[0m"
+	@$(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)" || echo -e " $(FAIL)"
 	@$(eval tests_run=$(shell echo $$(($(tests_run)+1))))
+
+%.check: MEMCHECK = $(VALGRIND)
+%.check: FAIL = $(LEAK)
+%.check: %.test
+	@echo "check completed"
 
 test.o: test.h
 
