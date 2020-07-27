@@ -4,6 +4,8 @@
 CFLAGS += -Wall
 OBJS := test.o ../src/lex.yy.o ../src/y.tab.o $(filter-out ../src/lsdbd.o, $(wildcard ../src/*.o))
 LIBS := -llibrecast
+BOLD := "\\e[0m\\e[2m"
+RESET := "\\e[0m"
 PASS = "\\e[0m\\e[32mOK\\e[0m" # end bold, green text
 FAIL = "\\e[0m\\e[31mFAIL\\e[0m" # end bold, red text
 LEAK = "\\e[0m\\e[31mFAIL \| LEAK\\e[0m\\n\\tSee $@.valgrind"
@@ -35,6 +37,8 @@ build:
 %.check: FAIL = $(LEAK)
 %.check: %.test
 	@echo "check completed"
+	@echo -e "    logfile:   " $(BOLD) $(LOGFILE) $(RESET)
+	@echo -e "    valgrind:  " $(BOLD) "$@.valgrind" $(RESET)
 
 test.o: test.h
 
