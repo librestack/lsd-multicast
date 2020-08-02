@@ -14,4 +14,4 @@ void test_assert(int condition, char *msg, ...);
 void test_strcmp(char *str1, char *str2, char *msg, ...);
 void test_expect(char *expected, char *got);
 void test_log(char *msg, ...);
-void test_name(char *str);
+void test_name(char *str, ...);
