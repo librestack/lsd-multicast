@@ -28,6 +28,9 @@ build:
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
 
+0000-0004.test: LDFLAGS += -lwolfssl
+0000-0005.test: LDFLAGS += -lsodium
+
 %.test: %.c $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
