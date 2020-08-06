@@ -87,3 +87,17 @@ void test_name(char *str, ...)
 	va_end(argp);
 	free(b);
 }
+
+int test_skip(char *str, ...)
+{
+	char *b;
+	va_list argp;
+	va_start(argp, str);
+	b = malloc(_vscprintf(str, argp) + 1);
+	vsprintf(b, str, argp);
+	printf("(skipped) %-60s", b);
+	test_log("  (%s)", b);
+	va_end(argp);
+	free(b);
+	return 0;
+}

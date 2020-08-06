@@ -48,7 +48,7 @@ int main()
 	size_t vlen;
 	int ret;
 
-	test_name("write %i hash keys (SHA3) to lmdb", limit);
+	return test_skip("write %i hash keys (SHA3) to lmdb", limit);
 	config.debug = 1;
 	config.loglevel = 79;
 	lctx = lc_ctx_new();

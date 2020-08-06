@@ -17,3 +17,4 @@ void test_expect(char *expected, char *got);
 void test_expectn(char *expected, char *got, size_t len);
 void test_log(char *msg, ...);
 void test_name(char *str, ...);
+int test_skip(char *str, ...);
