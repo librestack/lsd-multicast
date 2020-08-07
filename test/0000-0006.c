@@ -14,11 +14,11 @@ int main()
 	config.debug = 1;
 	config.loglevel = 127;
 	struct iovec data;
-	struct iovec repl= { .iov_base = "0000-0006" };
-	struct iovec user= { .iov_base = "username" };
+	struct iovec repl = { .iov_base = "0000-0006" };
+	struct iovec user = { .iov_base = "username" };
 	struct iovec mail = { .iov_base = "email" };
-	struct iovec pass= { .iov_base = "password" };
-	struct iovec serv= { .iov_base = "service" };
+	struct iovec pass = { .iov_base = "password" };
+	struct iovec serv = { .iov_base = "service" };
 	size_t len;
 	void *ptr;
 

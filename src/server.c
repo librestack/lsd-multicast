@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <librecast.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -20,6 +21,14 @@ lc_channel_t *chan;
 void sighandler(int sig)
 {
 	running = 0;
+}
+
+void server_reply(lc_message_t *msg) /* FIXME: TEMP */
+{
+	authpkt_t pkt;
+	/* TODO: unpack auth packet, reply to reply to channel */
+	auth_unpack(&pkt, msg->data, msg->len);
+	fprintf(stderr, "reply channel: '%.*s'\n", (int)pkt.repl.iov_len, (char *)pkt.repl.iov_base);
 }
 
 void server_stop(void)
@@ -50,6 +59,7 @@ int server_start(void)
 		if (byt_recv == -1 && errno == EINTR) continue;
 		//if (byt_recv > 0) running = 0; // TODO: process auth packet
 		// TODO: hand packet to processing thread
+		server_reply(&msg);
 		lc_msg_free(&msg);
 	}
 	lc_channel_free(chan);
