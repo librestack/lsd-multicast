@@ -6,10 +6,9 @@ ssize_t auth_pack(struct iovec *data, struct iovec *user, struct iovec *mail,
 		  struct iovec *pass, struct iovec *serv)
 {
 	void * ptr;
-	if ((user->iov_len > UCHAR_MAX)
-	 || (mail->iov_len > UCHAR_MAX)
-	 || (pass->iov_len > UCHAR_MAX)
-	 || (serv->iov_len > UCHAR_MAX)) {
+	if ((user->iov_len > UCHAR_MAX) || (mail->iov_len > UCHAR_MAX)
+	 || (pass->iov_len > UCHAR_MAX) || (serv->iov_len > UCHAR_MAX))
+	{
 		errno = E2BIG;
 		return -1;
 	}
