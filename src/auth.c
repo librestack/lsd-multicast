@@ -11,7 +11,7 @@ ssize_t auth_pack(struct iovec *data, struct iovec *repl,
 		errno = EINVAL;
 		return -1;
 	}
-	if ((!user) && (!mail)) {
+	if ((!user) && (!mail)) { /* username or email required */
 		errno = EINVAL;
 		return -1;
 	}
@@ -22,7 +22,7 @@ ssize_t auth_pack(struct iovec *data, struct iovec *repl,
 		errno = E2BIG;
 		return -1;
 	}
-	data->iov_len = 5;
+	data->iov_len = 5; /* 5 x char for lengths */
 	if (repl) data->iov_len += repl->iov_len;
 	if (user) data->iov_len += user->iov_len;
 	if (mail) data->iov_len += mail->iov_len;
