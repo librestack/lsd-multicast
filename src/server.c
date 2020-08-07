@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "auth.h"
 #include "config.h"
 #include "log.h"
 #include "server.h"
@@ -47,6 +48,8 @@ int server_start(void)
 	while (running) {
 		byt_recv = lc_msg_recv(sock, &msg);
 		if (byt_recv == -1 && errno == EINTR) continue;
+		//if (byt_recv > 0) running = 0; // TODO: process auth packet
+		// TODO: hand packet to processing thread
 		lc_msg_free(&msg);
 	}
 	lc_channel_free(chan);

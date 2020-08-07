@@ -2,7 +2,7 @@
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
 #ifndef _LSDBD_CONFIG_H
-#define _LSDBD_CONFIG_H
+#define _LSDBD_CONFIG_H 1
 
 #include "y.tab.h"
 
