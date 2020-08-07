@@ -13,13 +13,13 @@ typedef struct authpkt_s authpkt_t;
 
 /* fixed width */
 struct authpkt_s {
-	char 	username[36];	/* uuid */
-	char 	email[256];	/* RFC 5321 */
-	char 	password[256];
-	char 	service[64];
+	char 	user[36];	/* uuid */
+	char 	mail[256];	/* RFC 5321 */
+	char 	pass[256];
+	char 	serv[64];
 };
 
-ssize_t auth_pack(struct iovec *username, struct iovec *email,
-		  struct iovec *password, struct iovec *service);
+ssize_t auth_pack(struct iovec *data, struct iovec *user, struct iovec *mail,
+		  struct iovec *pass, struct iovec *serv);
 
 #endif /* _LSDBD_AUTH_H */
