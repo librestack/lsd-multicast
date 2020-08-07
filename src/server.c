@@ -4,7 +4,6 @@
 #include <errno.h>
 #include <librecast.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -28,7 +27,7 @@ void server_reply(lc_message_t *msg) /* FIXME: TEMP */
 	authpkt_t pkt;
 	/* TODO: unpack auth packet, reply to reply to channel */
 	auth_unpack(&pkt, msg->data, msg->len);
-	fprintf(stderr, "reply channel: '%.*s'\n", (int)pkt.repl.iov_len, (char *)pkt.repl.iov_base);
+	DEBUG("reply channel: '%.*s'", (int)pkt.repl.iov_len, (char *)pkt.repl.iov_base);
 }
 
 void server_stop(void)
