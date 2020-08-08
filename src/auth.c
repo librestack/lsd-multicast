@@ -31,11 +31,12 @@ ssize_t auth_pack(struct iovec *data, struct iovec *iovs[], int iov_count)
 			return -1;
 		}
 	}
-	data->iov_len = iov_count; /* n char for lengths */
+	data->iov_len = iov_count + 1; /* n char for lengths + opcode */
 	for (int i = 0; i < iov_count; i++) {
 		if (iovs[i]) data->iov_len += iovs[i]->iov_len;
 	}
 	ptr = data->iov_base = malloc(data->iov_len);
+	memset(ptr++, AUTH_OP_NOOP, 1);
 	for (int i = 0; i < iov_count; i++) {
 		ptr = auth_pack_field(iovs[i], ptr);
 	}
@@ -53,8 +54,8 @@ size_t auth_unpack_field(struct iovec *iov, void *data)
 
 size_t auth_unpack(authpkt_t *pkt, void *data)
 {
-	size_t clen;
-	clen  = auth_unpack_field(&pkt->repl, data);
+	size_t clen = 1;
+	clen += auth_unpack_field(&pkt->repl, data + clen);
 	clen += auth_unpack_field(&pkt->user, data + clen);
 	clen += auth_unpack_field(&pkt->mail, data + clen);
 	clen += auth_unpack_field(&pkt->pass, data + clen);

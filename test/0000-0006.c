@@ -50,10 +50,10 @@ int main()
 		iovs[i]->iov_len = strlen(iovs[i]->iov_base);	/* reset to correct length */
 	}
 
-	len = repl.iov_len + user.iov_len + mail.iov_len + pass.iov_len + serv.iov_len + 5;
+	len = repl.iov_len + user.iov_len + mail.iov_len + pass.iov_len + serv.iov_len + iov_count + 1;
 	test_assert(auth_pack(&data, iovs, iov_count) == len, "auth_pack() ok");
 
-	ptr = data.iov_base;
+	ptr = data.iov_base + 1;
 	test_assert(!memcmp(ptr++, &repl.iov_len, 1), "replyto length set");
 	test_assert(!memcmp(ptr, (&repl)->iov_base, repl.iov_len), "replyto data set");
 	ptr += repl.iov_len;

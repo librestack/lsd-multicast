@@ -29,7 +29,7 @@ int main()
 	mail.iov_len = strlen(mail.iov_base);
 	pass.iov_len = strlen(pass.iov_base);
 	serv.iov_len = strlen(serv.iov_base);
-	len = repl.iov_len + user.iov_len + mail.iov_len + pass.iov_len + serv.iov_len + 5;
+	len = repl.iov_len + user.iov_len + mail.iov_len + pass.iov_len + serv.iov_len + iov_count + 1;
 	test_assert(auth_pack(&data, iovs, iov_count) == len,
 			"auth_pack() ok");
 
