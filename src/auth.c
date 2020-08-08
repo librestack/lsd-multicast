@@ -46,7 +46,7 @@ ssize_t auth_pack(struct iovec *data, struct iovec *repl,
 	return data->iov_len;
 }
 
-size_t auth_unpack_field(struct iovec *iov, void *data, size_t len)
+size_t auth_unpack_field(struct iovec *iov, void *data)
 {
 	unsigned char clen;
 	clen = ((unsigned char *)data++)[0];
@@ -55,13 +55,13 @@ size_t auth_unpack_field(struct iovec *iov, void *data, size_t len)
 	return (size_t) clen + 1;
 }
 
-size_t auth_unpack(authpkt_t *pkt, void *data, size_t len)
+size_t auth_unpack(authpkt_t *pkt, void *data)
 {
 	size_t clen;
-	clen  = auth_unpack_field(&pkt->repl, data, len);
-	clen += auth_unpack_field(&pkt->user, data + clen, len - clen);
-	clen += auth_unpack_field(&pkt->mail, data + clen, len - clen);
-	clen += auth_unpack_field(&pkt->pass, data + clen, len - clen);
-	clen += auth_unpack_field(&pkt->serv, data + clen, len - clen);
+	clen  = auth_unpack_field(&pkt->repl, data);
+	clen += auth_unpack_field(&pkt->user, data + clen);
+	clen += auth_unpack_field(&pkt->mail, data + clen);
+	clen += auth_unpack_field(&pkt->pass, data + clen);
+	clen += auth_unpack_field(&pkt->serv, data + clen);
 	return clen;
 }

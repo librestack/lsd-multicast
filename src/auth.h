@@ -22,6 +22,6 @@ ssize_t auth_pack(struct iovec *data, struct iovec *repl,
 		  struct iovec *user, struct iovec *mail,
 		  struct iovec *pass, struct iovec *serv);
 
-size_t	auth_unpack(authpkt_t *pkt, void *data, size_t len);
+size_t	auth_unpack(authpkt_t *pkt, void *data);
 
 #endif /* _LSDBD_AUTH_H */

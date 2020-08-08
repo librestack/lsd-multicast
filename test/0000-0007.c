@@ -31,7 +31,7 @@ int main()
 	test_assert(auth_pack(&data, &repl, &user, &mail, &pass, &serv) == len,
 			"auth_pack() ok");
 
-	test_assert(auth_unpack(&pkt, (&data)->iov_base, (&data)->iov_len) == len,
+	test_assert(auth_unpack(&pkt, (&data)->iov_base) == len,
 			"auth_unpack() ok");
 
 	test_assert(pkt.repl.iov_len == repl.iov_len,
