@@ -20,6 +20,8 @@ int main()
 	struct iovec mail = { .iov_base = "email" };
 	struct iovec pass = { .iov_base = "password" };
 	struct iovec serv = { .iov_base = "service" };
+	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
+	const int iov_count = sizeof iovs / sizeof iovs[0];
 	size_t len;
 
 	repl.iov_len = strlen(repl.iov_base);
@@ -28,7 +30,7 @@ int main()
 	pass.iov_len = strlen(pass.iov_base);
 	serv.iov_len = strlen(serv.iov_base);
 	len = repl.iov_len + user.iov_len + mail.iov_len + pass.iov_len + serv.iov_len + 5;
-	test_assert(auth_pack(&data, &repl, &user, &mail, &pass, &serv) == len,
+	test_assert(auth_pack(&data, iovs, iov_count) == len,
 			"auth_pack() ok");
 
 	test_assert(auth_unpack(&pkt, (&data)->iov_base) == len,

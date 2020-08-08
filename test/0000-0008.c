@@ -19,6 +19,8 @@ void *testthread(void *arg)
 	ssize_t byt_sent;
 	ssize_t byt_recv;
 	struct iovec data, repl, user, mail, pass, serv;
+	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
+	const int iov_count = sizeof iovs / sizeof iovs[0];
 	char replyto[] = "0000-0008";
 	char email[] = "test@live.librecast.net";
 	char password[] = "password";
@@ -45,7 +47,7 @@ void *testthread(void *arg)
 	pass.iov_len = strlen(password);
 	serv.iov_base = service;
 	serv.iov_len = strlen(service);
-	test_assert(auth_pack(&data, &repl, &user, &mail, &pass, &serv) > 0, "auth_pack()");
+	test_assert(auth_pack(&data, iovs, iov_count) > 0, "auth_pack()");
 
 	/* TODO: encrypt payload */
 

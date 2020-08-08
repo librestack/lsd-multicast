@@ -14,18 +14,14 @@ void * auth_pack_field(struct iovec *iov, void *ptr)
 	return ptr;
 }
 
-ssize_t auth_pack(struct iovec *data, struct iovec *repl,
-		  struct iovec *user, struct iovec *mail,
-		  struct iovec *pass, struct iovec *serv)
+ssize_t auth_pack(struct iovec *data, struct iovec *iovs[], int iov_count)
 {
 	void * ptr;
-	struct iovec *iovs[] = { repl, user, mail, pass, serv };
-	const int iov_count = sizeof iovs / sizeof iovs[0];
 	if (!data) {
 		errno = EINVAL;
 		return -1;
 	}
-	if ((!user) && (!mail)) { /* username or email required */
+	if ((!iovs[AUTH_USER]) && (!iovs[AUTH_MAIL])) { /* username or email required */
 		errno = EINVAL;
 		return -1;
 	}

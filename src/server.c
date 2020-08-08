@@ -30,7 +30,7 @@ void server_reply(lc_message_t *msg) /* FIXME: TEMP */
 
 	/* unpack auth packet, reply to reply to channel */
 	DEBUG("auth packet received");
-	auth_unpack(&pkt, msg->data, msg->len);
+	auth_unpack(&pkt, msg->data);
 	DEBUG("reply channel: '%.*s'", (int)pkt.repl.iov_len, (char *)pkt.repl.iov_base);
 	DEBUG("user: '%.*s'", (int)pkt.user.iov_len, (char *)pkt.user.iov_base);
 	DEBUG("mail: '%.*s'", (int)pkt.mail.iov_len, (char *)pkt.mail.iov_base);
