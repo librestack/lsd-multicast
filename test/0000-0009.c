@@ -66,6 +66,8 @@ int main()
 		len_check = (size_t)le64toh(n);
 		test_assert(iovs[i]->iov_len == len_check,
 				"check length, iovs[%i] %zu == %zu", i, iovs[i]->iov_len, len_check);
+		test_expectn(iovs[i]->iov_base, ptr, iovs[i]->iov_len); /* check data */
+		ptr += iovs[i]->iov_len;
 	}
 	free(data.iov_base);
 

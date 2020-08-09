@@ -60,7 +60,7 @@ ssize_t auth_pack_next(struct iovec *data, struct iovec *iovs[], int iov_count,
 		for (n = htole64(iovs[i]->iov_len); n > 0x7f; n >>= 7)
 			(data->iov_len)++;
 	}
-	ptr = data->iov_base = calloc(1, data->iov_len);
+	ptr = data->iov_base = calloc(1, data->iov_len + 1);
 	memset(ptr++, op, 1);
 	memset(ptr++, flags, 1);
 	for (int i = 0; i < iov_count; i++) {
@@ -68,6 +68,8 @@ ssize_t auth_pack_next(struct iovec *data, struct iovec *iovs[], int iov_count,
 		for (n = htole64(iovs[i]->iov_len); n > 0x7f; n >>= 7)
 			memset(ptr++, 0x80 | n, 1);
 		memset(ptr++, n, 1);
+		memcpy(ptr, iovs[i]->iov_base, iovs[i]->iov_len);
+		ptr += iovs[i]->iov_len;
 	}
 	return data->iov_len;
 }
