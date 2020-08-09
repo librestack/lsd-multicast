@@ -1,4 +1,5 @@
 #include "auth.h"
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,6 +40,34 @@ ssize_t auth_pack(struct iovec *data, struct iovec *iovs[], int iov_count)
 	memset(ptr++, AUTH_OP_NOOP, 1);
 	for (int i = 0; i < iov_count; i++) {
 		ptr = auth_pack_field(iovs[i], ptr);
+	}
+	return data->iov_len;
+}
+
+ssize_t auth_pack_next(struct iovec *data, struct iovec *iovs[], int iov_count,
+		auth_opcode_t op, uint8_t flags)
+{
+	void *ptr;
+	uint64_t n;
+	if (!data) {
+		errno = EINVAL;
+		return -1;
+	}
+	/* calculate length */
+	data->iov_len = 1;
+	for (int i = 0; i < iov_count; i++) {
+		data->iov_len += iovs[i]->iov_len + 1;
+		for (n = htole64(iovs[i]->iov_len); n > 0x7f; n >>= 7)
+			(data->iov_len)++;
+	}
+	ptr = data->iov_base = calloc(1, data->iov_len);
+	memset(ptr++, op, 1);
+	memset(ptr++, flags, 1);
+	for (int i = 0; i < iov_count; i++) {
+		/* encode length as bytes with 7 bits + overflow bit */
+		for (n = htole64(iovs[i]->iov_len); n > 0x7f; n >>= 7)
+			memset(ptr++, 0x80 | n, 1);
+		memset(ptr++, n, 1);
 	}
 	return data->iov_len;
 }

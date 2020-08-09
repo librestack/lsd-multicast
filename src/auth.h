@@ -6,6 +6,7 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <stdint.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
@@ -38,7 +39,7 @@
 
 #define AUTH_OPCODE_ENUM(code, name, text, f) name = code,
 typedef enum {
-        AUTH_OPCODES(AUTH_OPCODE_ENUM)
+	AUTH_OPCODES(AUTH_OPCODE_ENUM)
 } auth_opcode_t;
 
 #define AUTH_FLD_REPL		0x1
@@ -70,5 +71,7 @@ struct authpkt_s {
 
 ssize_t auth_pack(struct iovec *data, struct iovec *iovs[], int iov_count);
 size_t	auth_unpack(authpkt_t *pkt, void *data);
+ssize_t auth_pack_next(struct iovec *data, struct iovec *iovs[], int iov_count,
+		auth_opcode_t op, uint8_t flags);
 
 #endif /* _LSDBD_AUTH_H */
