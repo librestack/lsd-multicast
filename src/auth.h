@@ -73,5 +73,7 @@ ssize_t auth_pack(struct iovec *data, struct iovec *iovs[], int iov_count);
 size_t	auth_unpack(authpkt_t *pkt, void *data);
 ssize_t auth_pack_next(struct iovec *data, struct iovec *iovs[], int iov_count,
 		auth_opcode_t op, uint8_t flags);
+ssize_t auth_unpack_next(struct iovec *data, struct iovec iovs[], int iov_count,
+		auth_opcode_t *op, uint8_t *flags);
 
 #endif /* _LSDBD_AUTH_H */

@@ -22,8 +22,9 @@ int main()
 	struct iovec pass = { .iov_base = "password" };
 	struct iovec serv = { .iov_base = "service" };
 	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
+	struct iovec iovc[5] = {};
 	const int iov_count = sizeof iovs / sizeof iovs[0];
-	size_t len_check;
+	size_t len_check, len_packed;
 	uint8_t flags = 0;
 	auth_opcode_t op = AUTH_OP_KEY_REP;
 	void *ptr;
@@ -42,6 +43,7 @@ int main()
 			len_check++; /* extra byte needed for length */
 		}
 	}
+	len_packed = len_check;
 	test_assert(auth_pack_next(&data, iovs, iov_count, op, flags) == len_check,
 			"pack some data");
 
@@ -69,6 +71,21 @@ int main()
 		test_expectn(iovs[i]->iov_base, ptr, iovs[i]->iov_len); /* check data */
 		ptr += iovs[i]->iov_len;
 	}
+
+	/* unpack */
+	op_check = 0;
+	flags_check = 0;
+	test_assert(auth_unpack_next(&data, iovc, iov_count, (auth_opcode_t *)&op_check,
+			&flags_check) == len_packed, "unpack");
+	test_assert(op_check == op, "opcode");
+	test_assert(flags_check == flags, "flags");
+	for (int i = 0; i < iov_count; i++) {
+		test_assert(iovc[i].iov_len == iovs[i]->iov_len, "length check");
+		test_expectn(iovc[i].iov_base, iovs[i]->iov_base, iovc[i].iov_len);
+		free(iovc[i].iov_base);
+	}
+
+
 	free(data.iov_base);
 
 	return fails;

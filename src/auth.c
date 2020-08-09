@@ -74,6 +74,29 @@ ssize_t auth_pack_next(struct iovec *data, struct iovec *iovs[], int iov_count,
 	return data->iov_len;
 }
 
+ssize_t auth_unpack_next(struct iovec *data, struct iovec iovs[], int iov_count,
+		auth_opcode_t *op, uint8_t *flags)
+{
+	void *ptr = data->iov_base;
+	size_t len;
+	*op = ((auth_opcode_t *)ptr++)[0];
+	*flags = ((uint8_t *)ptr++)[0];
+	for (int i = 0; ptr < data->iov_base + data->iov_len; i++) {
+		uint64_t n = 0, shift = 0;
+		uint8_t b;
+		do {
+			b = ((uint8_t *)ptr++)[0];
+			n |= (b & 0x7f) << shift;
+			shift += 7;
+		} while (b & 0x80);
+		len = (size_t)le64toh(n);
+		iovs[i].iov_len = len;
+		iovs[i].iov_base = strndup(ptr, len);
+		ptr += len;
+	}
+	return data->iov_len;
+}
+
 size_t auth_unpack_field(struct iovec *iov, void *data)
 {
 	unsigned char clen;
