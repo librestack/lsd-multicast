@@ -91,7 +91,7 @@ ssize_t auth_unpack_next(struct iovec *data, struct iovec iovs[], int iov_count,
 		} while (b & 0x80);
 		len = (size_t)le64toh(n);
 		iovs[i].iov_len = len;
-		iovs[i].iov_base = strndup(ptr, len);
+		iovs[i].iov_base = ptr;
 		ptr += len;
 	}
 	return data->iov_len;

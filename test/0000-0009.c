@@ -11,7 +11,7 @@
 
 int main()
 {
-	test_name("auth_pack_next()");
+	test_name("auth_pack_next() / auth_unpack_next()");
 	config.debug = 1;
 	config.loglevel = 127;
 
@@ -82,9 +82,7 @@ int main()
 	for (int i = 0; i < iov_count; i++) {
 		test_assert(iovc[i].iov_len == iovs[i]->iov_len, "length check");
 		test_expectn(iovc[i].iov_base, iovs[i]->iov_base, iovc[i].iov_len);
-		free(iovc[i].iov_base);
 	}
-
 
 	free(data.iov_base);
 
