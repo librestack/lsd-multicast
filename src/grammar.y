@@ -116,15 +116,6 @@ handlers:
 handler:
 	COMMENT { /* skip comment */ }
 	|
-	PORT NUMBER
-	{
-		fprintf(stderr, "handler port = %i\n", $2);
-		if ($2 < 0 || $2 > USHRT_MAX)
-			fprintf(stderr, "invalid handler port on line: %i\n", lineno);
-		else
-			handler.port = $2;
-	}
-	|
 	CHANNEL	WORD BRACKETOPEN DBLQUOTEDSTRING BRACKETCLOSE
 	{
 		fprintf(stderr, "handler channel = %s(\"%s\")\n", $3, $4);
@@ -155,6 +146,15 @@ handler:
 	{
 		fprintf(stderr, "handler module = %s\n", $2);
 		handler.module = $2;
+	}
+	|
+	PORT NUMBER
+	{
+		fprintf(stderr, "handler port = %i\n", $2);
+		if ($2 < 0 || $2 > USHRT_MAX)
+			fprintf(stderr, "invalid handler port on line: %i\n", lineno);
+		else
+			handler.port = $2;
 	}
 	|
 	SCOPE WORD
