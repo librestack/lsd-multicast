@@ -35,7 +35,7 @@ scope				return SCOPE;
 	return DBLQUOTEDSTRING;
 }
 
-[a-f0-9\:]+			return V6ADDR;
+[a-f0-9\:]+			yylval.sval=strdup(yytext); return V6ADDR;
 \/				return SLASH;
 [a-zA-Z0-9]+			yylval.sval=strdup(yytext); return WORD;
 [a-zA-Z0-9.\-\/]+		yylval.sval=strdup(yytext); return FILENAME;

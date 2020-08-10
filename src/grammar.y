@@ -130,6 +130,13 @@ handler:
 		handler.channel = $4;
 	}
 	|
+	CHANNEL	V6ADDR
+	{
+		fprintf(stderr, "handler channel = %s\n", $2);
+		handler.channelhash = NULL;
+		handler.channel = $2;
+	}
+	|
 	SCOPE WORD
 	{
 		fprintf(stderr, "handler scope = %s\n", $2);
