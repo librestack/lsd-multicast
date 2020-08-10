@@ -7,10 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "auth.h"
 #include "config.h"
 #include "log.h"
 #include "server.h"
+#include "wire.h"
 
 static volatile sig_atomic_t running = 1;
 lc_ctx_t *lctx;

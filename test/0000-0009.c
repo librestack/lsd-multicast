@@ -3,7 +3,7 @@
 
 #include "test.h"
 #include "../src/config.h"
-#include "../src/pack.h"
+#include "../src/wire.h"
 #include <librecast.h>
 #include <stdint.h>
 #include <string.h>
@@ -11,7 +11,7 @@
 
 int main()
 {
-	test_name("auth_pack_next() / auth_unpack_next()");
+	test_name("wire_pack() / wire_unpack()");
 	config.debug = 1;
 	config.loglevel = 127;
 
@@ -32,7 +32,7 @@ int main()
 	flags |= 42;
 
 	errno = 0;
-	test_assert(pack_data(NULL, NULL, iov_count, op, flags) == -1, "ensure data != NULL");
+	test_assert(wire_pack(NULL, NULL, iov_count, op, flags) == -1, "ensure data != NULL");
 	test_assert(errno == EINVAL, "data NULL => EINVAL");
 
 	len_check = 1 + iov_count;
@@ -44,7 +44,7 @@ int main()
 		}
 	}
 	len_packed = len_check;
-	test_assert(pack_data(&data, iovs, iov_count, op, flags) == len_check,
+	test_assert(wire_pack(&data, iovs, iov_count, op, flags) == len_check,
 			"pack some data");
 
 	/* check opcode & flags */
@@ -75,7 +75,7 @@ int main()
 	/* unpack */
 	op_check = 0;
 	flags_check = 0;
-	test_assert(unpack_data(&data, iovc, iov_count, &op_check, &flags_check) == len_packed, "unpack");
+	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == len_packed, "unpack");
 	test_assert(op_check == op, "opcode");
 	test_assert(flags_check == flags, "flags");
 	for (int i = 0; i < iov_count; i++) {

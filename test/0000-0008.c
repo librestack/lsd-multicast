@@ -2,9 +2,9 @@
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
 #include "test.h"
-#include "../src/pack.h"
 #include "../src/config.h"
 #include "../src/server.h"
+#include "../src/wire.h"
 #include <librecast.h>
 #include <pthread.h>
 #include <time.h>
@@ -49,7 +49,7 @@ void *testthread(void *arg)
 	serv.iov_len = strlen(service);
 	int op = 1;
 	int flags = 42;
-	test_assert(pack_data(&data, iovs, iov_count, op, flags), "pack request");
+	test_assert(wire_pack(&data, iovs, iov_count, op, flags), "pack request");
 
 	/* TODO: encrypt payload */
 #if 0

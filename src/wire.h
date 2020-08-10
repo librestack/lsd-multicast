@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
-#ifndef _LSDM_PACK_H
-#define _LSDM_PACK_H 1
+#ifndef _LSDM_WIRE_H
+#define _LSDM_WIRE_H 1
 
 #include <errno.h>
 //#include <limits.h>
@@ -25,7 +25,7 @@
  * if opcode overflows to a whole byte or more, flags becomes a whole byte
  * minimum */
 
-ssize_t pack_data(struct iovec *data, struct iovec *iovs[], int iov_count, uint8_t op, uint8_t flags);
-ssize_t unpack_data(struct iovec *data, struct iovec iovs[], int iov_count, uint8_t *op, uint8_t *flags);
+ssize_t wire_pack(struct iovec *data, struct iovec *iovs[], int iov_count, uint8_t op, uint8_t flags);
+ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count, uint8_t *op, uint8_t *flags);
 
-#endif /* _LSDM_PACK_H */
+#endif /* _LSDM_WIRE_H */

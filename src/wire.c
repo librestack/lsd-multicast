@@ -1,9 +1,9 @@
-#include "auth.h"
+#include "wire.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-ssize_t pack_data(struct iovec *data, struct iovec *iovs[], int iov_count,
+ssize_t wire_pack(struct iovec *data, struct iovec *iovs[], int iov_count,
 		uint8_t op, uint8_t flags)
 {
 	void *ptr;
@@ -33,12 +33,12 @@ ssize_t pack_data(struct iovec *data, struct iovec *iovs[], int iov_count,
 	return data->iov_len;
 }
 
-ssize_t unpack_data(struct iovec *data, struct iovec iovs[], int iov_count,
+ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count,
 		uint8_t *op, uint8_t *flags)
 {
 	void *ptr = data->iov_base;
 	size_t len;
-	*op = ((auth_opcode_t *)ptr++)[0];
+	*op = ((uint8_t *)ptr++)[0];
 	*flags = ((uint8_t *)ptr++)[0];
 	for (int i = 0; ptr < data->iov_base + data->iov_len; i++) {
 		uint64_t n = 0, shift = 0;
