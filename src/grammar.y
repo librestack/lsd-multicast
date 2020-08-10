@@ -37,6 +37,8 @@ handler_t handler = {};
 %token <sval> FILENAME
 %token <sval> HANDLER
 %token <sval> KEY
+%token <sval> KEYPRIV
+%token <sval> KEYPUB
 %token <ival> LOGLEVEL
 %token <sval> MODULE
 %token <sval> NEWLINE
@@ -135,6 +137,23 @@ handler:
 		fprintf(stderr, "handler channel = %s\n", $2);
 		handler.channelhash = NULL;
 		handler.channel = $2;
+	}
+	|
+	KEYPRIV WORD
+	{
+		fprintf(stderr, "handler private key = %s\n", $2);
+		handler.key_private = $2;
+	}
+	|
+	KEYPUB WORD
+	{
+		fprintf(stderr, "handler public key = %s\n", $2);
+		handler.key_public = $2;
+	}
+	|
+	MODULE WORD
+	{
+		free($2);
 	}
 	|
 	SCOPE WORD

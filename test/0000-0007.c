@@ -18,8 +18,9 @@ int main()
 
 	test_assert(h != NULL, "config.handlers");
 	test_assert(h && h->port == 4242, "handler (1) port set");
-	test_assert(h && h->next && h->next->port == 1234, "handler (2) port set");
-	test_assert(h && h->next && h->next->next == NULL, "end of handler list");
+	h = h->next;
+	test_assert(h && h->port == 1234, "handler (2) port set");
+	test_assert(h && h->next == NULL, "end of handler list");
 
 	config_free();
 	return fails;

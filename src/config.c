@@ -28,6 +28,8 @@ void config_free()
 	while (p) {
 		config_free_ptr(p->channel);
 		config_free_ptr(p->channelhash);
+		config_free_ptr(p->key_private);
+		config_free_ptr(p->key_public);
 		config_free_ptr(p->scope);
 		h = p;
 		p = p->next;

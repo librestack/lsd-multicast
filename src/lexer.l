@@ -19,6 +19,8 @@ debug				return DEBUGMODE;
 false|true			yylval.ival = strcmp(yytext, "false"); return BOOL;
 handler				return HANDLER;
 key				return KEY;
+key_priv			return KEYPRIV;
+key_pub				return KEYPUB;
 loglevel			return LOGLEVEL;
 module				return MODULE;
 port				return PORT;
