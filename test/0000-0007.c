@@ -3,19 +3,12 @@
 
 #include "test.h"
 #include "../src/config.h"
-#include "../src/server.h"
-#include "../src/wire.h"
-#include <librecast.h>
-#include <time.h>
-#include <unistd.h>
 
 int main()
 {
 	test_name("config: protocol handlers");
 	config_include("./0000-0007.conf");
-
 	handler_t *h = config.handlers;
-
 	test_assert(h != NULL, "config.handlers");
 	test_assert(h && h->port == 4242, "handler (1) port set");
 	test_expect("echo", h->channel);
@@ -28,7 +21,6 @@ int main()
 	test_assert(h && h->next == NULL, "end of handler list");
 	test_expect("ff3e:f991:1bcb:2723:1658:a531:5f33:c58c", h->channel);
 	test_expect("bounce", h->module);
-
 	config_free();
 	return fails;
 }
