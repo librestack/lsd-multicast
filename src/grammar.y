@@ -11,6 +11,7 @@ extern int lineno;
 void yyerror(const char *str);
 int yylex();
 int yywrap();
+int handlers = 0;
 handler_t *handler_last = NULL;
 handler_t handler = {};
 
@@ -55,14 +56,11 @@ globals:
 	;
 
 global:
-	COMMENT
-	{ /* skip comment */ 
-		fprintf(stderr, "comment\n");
-	}
+	COMMENT { /* skip comment */ }
 	|
 	HANDLER BRACEOPEN handlers BRACECLOSE
 	{
-		fprintf(stderr, "handler\n");
+		fprintf(stderr, "handler %i\n", ++handlers);
 		handler_t *h = malloc(sizeof(handler_t));
 		if (!config.handlers)
 			config.handlers = h;
@@ -114,11 +112,7 @@ handlers:
 	;
 
 handler:
-	COMMENT
-	{
-		/* skip comment */
-		fprintf(stderr, "skipping handler comment\n");
-	}
+	COMMENT { /* skip comment */ }
 	|
 	PORT NUMBER
 	{
@@ -129,10 +123,17 @@ handler:
 			handler.port = $2;
 	}
 	|
+	CHANNEL	WORD BRACKETOPEN DBLQUOTEDSTRING BRACKETCLOSE
+	{
+		fprintf(stderr, "handler channel = %s(\"%s\")\n", $3, $4);
+		handler.channelhash = $3;
+		handler.channel = $4;
+	}
+	|
 	SCOPE WORD
 	{
 		fprintf(stderr, "handler scope = %s\n", $2);
-		free($2);
+		handler.scope = $2;
 	}
 	;
 %%

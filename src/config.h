@@ -10,7 +10,10 @@
 
 typedef struct handler_s handler_t;
 struct handler_s {
-	handler_t      *next;
+	handler_t *	next;
+	char *		channel;
+	char *		channelhash;
+	char *		scope;
 	unsigned short  port;
 };
 

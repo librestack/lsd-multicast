@@ -26,6 +26,15 @@ proto				return PROTO;
 scope				return SCOPE;
 [0-9]+				yylval.ival = atoi(yytext); return NUMBER;
 :				return COLON;
+\"[^"\n]*["\n] {
+	yylval.sval = strdup(yytext + 1);
+	if (yylval.sval[yyleng - 2] != '"')
+		fprintf(stderr, "double quoted string not closed\n");
+	else
+		yylval.sval[yyleng-2] = 0;
+	return DBLQUOTEDSTRING;
+}
+
 [a-f0-9\:]+			return V6ADDR;
 \/				return SLASH;
 [a-zA-Z0-9]+			yylval.sval=strdup(yytext); return WORD;

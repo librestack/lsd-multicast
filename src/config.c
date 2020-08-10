@@ -26,6 +26,9 @@ void config_free()
 	handler_t *h;
 	handler_t *p = config.handlers;
 	while (p) {
+		config_free_ptr(p->channel);
+		config_free_ptr(p->channelhash);
+		config_free_ptr(p->scope);
 		h = p;
 		p = p->next;
 		free(h);
