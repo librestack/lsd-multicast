@@ -32,6 +32,7 @@ build:
 0000-0004.test: LDFLAGS += -lwolfssl
 0000-0005.test: LDFLAGS += -lsodium
 0000-0007.test: LDFLAGS += -pthread
+0000-0008.test: LDFLAGS += -pthread
 
 %.test: %.c $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

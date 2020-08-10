@@ -2,6 +2,7 @@
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
 %{
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 #include "config.h"
@@ -10,6 +11,8 @@ extern int lineno;
 void yyerror(const char *str);
 int yylex();
 int yywrap();
+handler_t *handler_last = NULL;
+handler_t handler = {};
 
 %}
 %union
@@ -17,6 +20,10 @@ int yywrap();
 	int ival;
 	char *sval;
 }
+%token <sval> BRACECLOSE
+%token <sval> BRACEOPEN
+%token <sval> BRACKETCLOSE
+%token <sval> BRACKETOPEN
 %token <ival> BOOL
 %token <sval> CERT
 %token <sval> CHANNEL
@@ -27,33 +34,43 @@ int yywrap();
 %token <sval> DBLQUOTEDSTRING
 %token <ival> DEBUGMODE
 %token <sval> FILENAME
+%token <sval> HANDLER
 %token <sval> KEY
 %token <ival> LOGLEVEL
+%token <sval> MODULE
 %token <sval> NEWLINE
 %token <ival> NUMBER
+%token <ival> PORT
 %token <sval> PROTO
+%token <sval> SCOPE
+%token <sval> SECTION
 %token <sval> SLASH
 %token <sval> WORD
 %token <sval> V6ADDR
 
 %%
-configs:
+globals:
 	/* empty */
-	| configs config
+	| globals global
 	;
 
-config:
+global:
 	COMMENT
-	{ /* skip comment */ }
-	|
-	CHANNEL DBLQUOTEDSTRING
-	{
-		fprintf(stderr, "joining channel '%s'\n", $2);
+	{ /* skip comment */ 
+		fprintf(stderr, "comment\n");
 	}
 	|
-	CHANNEL WORD
+	HANDLER BRACEOPEN handlers BRACECLOSE
 	{
-		fprintf(stderr, "joining channel '%s'\n", $2);
+		fprintf(stderr, "handler\n");
+		handler_t *h = malloc(sizeof(handler_t));
+		if (!config.handlers)
+			config.handlers = h;
+		else
+			handler_last->next = h;
+		memcpy(h, &handler, sizeof(handler_t));
+		handler_last = h;
+		memset(&handler, 0, sizeof(handler_t));
 	}
 	|
 	DAEMON BOOL
@@ -88,6 +105,34 @@ config:
 	{
 		fprintf(stderr, "cert = '%s'\n", $2);
 		config.cert = $2;
+	}
+	;
+
+handlers:
+	/* this space intentionally left blank */
+	| handlers handler
+	;
+
+handler:
+	COMMENT
+	{
+		/* skip comment */
+		fprintf(stderr, "skipping handler comment\n");
+	}
+	|
+	PORT NUMBER
+	{
+		fprintf(stderr, "handler port = %i\n", $2);
+		if ($2 < 0 || $2 > USHRT_MAX)
+			fprintf(stderr, "invalid handler port on line: %i\n", lineno);
+		else
+			handler.port = $2;
+	}
+	|
+	SCOPE WORD
+	{
+		fprintf(stderr, "handler scope = %s\n", $2);
+		free($2);
 	}
 	;
 %%

@@ -22,6 +22,15 @@ void config_free()
 	config_free_ptr(config.cert);
 	config_free_ptr(config.configfile);
 	config_free_ptr(config.key);
+
+	handler_t *h;
+	handler_t *p = config.handlers;
+	while (p) {
+		h = p;
+		p = p->next;
+		free(h);
+	}
+	config.handlers = NULL;
 }
 
 int config_include(char *configfile)

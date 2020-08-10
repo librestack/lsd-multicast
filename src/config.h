@@ -8,6 +8,12 @@
 
 #define CONFIG_LOGLEVEL_MAX 127
 
+typedef struct handler_s handler_t;
+struct handler_s {
+	handler_t      *next;
+	unsigned short  port;
+};
+
 typedef struct config_s config_t;
 struct config_s {
 	int	daemon;
@@ -16,6 +22,7 @@ struct config_s {
 	char *	configfile;
 	char *	key;
 	char *	cert;
+	handler_t *handlers;
 };
 extern config_t config;
 
