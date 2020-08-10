@@ -26,7 +26,8 @@ int main()
 	h = h->next;
 	test_assert(h && h->port == 1234, "handler (2) port set");
 	test_assert(h && h->next == NULL, "end of handler list");
-
+	test_expect("ff3e:f991:1bcb:2723:1658:a531:5f33:c58c", h->channel);
+	test_expect("bounce", h->module);
 
 	config_free();
 	return fails;
