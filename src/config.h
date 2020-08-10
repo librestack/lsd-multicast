@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
-#ifndef _LSDBD_CONFIG_H
-#define _LSDBD_CONFIG_H 1
+#ifndef _LSDM_CONFIG_H
+#define _LSDM_CONFIG_H 1
 
 #include "y.tab.h"
 
@@ -23,4 +23,4 @@ void	config_free();
 int	config_include(char *configfile);
 int	config_parse();
 
-#endif /* _LSDBD_CONFIG_H */
+#endif /* _LSDM_CONFIG_H */

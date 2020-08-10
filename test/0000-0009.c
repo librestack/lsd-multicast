@@ -2,8 +2,8 @@
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
 #include "test.h"
-#include "../src/auth.h"
 #include "../src/config.h"
+#include "../src/pack.h"
 #include <librecast.h>
 #include <stdint.h>
 #include <string.h>
@@ -26,13 +26,13 @@ int main()
 	const int iov_count = sizeof iovs / sizeof iovs[0];
 	size_t len_check, len_packed;
 	uint8_t flags = 0;
-	auth_opcode_t op = AUTH_OP_KEY_REP;
+	uint8_t op = 2;
 	void *ptr;
 
 	flags |= 42;
 
 	errno = 0;
-	test_assert(auth_pack_next(NULL, NULL, iov_count, op, flags) == -1, "ensure data != NULL");
+	test_assert(pack_data(NULL, NULL, iov_count, op, flags) == -1, "ensure data != NULL");
 	test_assert(errno == EINVAL, "data NULL => EINVAL");
 
 	len_check = 1 + iov_count;
@@ -44,7 +44,7 @@ int main()
 		}
 	}
 	len_packed = len_check;
-	test_assert(auth_pack_next(&data, iovs, iov_count, op, flags) == len_check,
+	test_assert(pack_data(&data, iovs, iov_count, op, flags) == len_check,
 			"pack some data");
 
 	/* check opcode & flags */
@@ -75,8 +75,7 @@ int main()
 	/* unpack */
 	op_check = 0;
 	flags_check = 0;
-	test_assert(auth_unpack_next(&data, iovc, iov_count, (auth_opcode_t *)&op_check,
-			&flags_check) == len_packed, "unpack");
+	test_assert(unpack_data(&data, iovc, iov_count, &op_check, &flags_check) == len_packed, "unpack");
 	test_assert(op_check == op, "opcode");
 	test_assert(flags_check == flags, "flags");
 	for (int i = 0; i < iov_count; i++) {

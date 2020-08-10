@@ -24,27 +24,20 @@ void sighandler(int sig)
 
 void server_reply(lc_message_t *msg) /* FIXME: TEMP */
 {
-	authpkt_t pkt;
 	lc_channel_t *chan_repl;
 	lc_message_t msg_repl;
 
 	/* unpack auth packet, reply to reply to channel */
-	DEBUG("auth packet received");
-	auth_unpack(&pkt, msg->data);
-	DEBUG("reply channel: '%.*s'", (int)pkt.repl.iov_len, (char *)pkt.repl.iov_base);
-	DEBUG("user: '%.*s'", (int)pkt.user.iov_len, (char *)pkt.user.iov_base);
-	DEBUG("mail: '%.*s'", (int)pkt.mail.iov_len, (char *)pkt.mail.iov_base);
-	DEBUG("pass: '%.*s'", (int)pkt.pass.iov_len, (char *)pkt.pass.iov_base);
-	DEBUG("serv: '%.*s'", (int)pkt.serv.iov_len, (char *)pkt.serv.iov_base);
 
 	/* reply to requested reply channel */
 	int opt = 1;
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt)); /* FIXME */
-	char *repl = strndup((char *)pkt.repl.iov_base, pkt.repl.iov_len);
+	//char *repl = strndup((char *)pkt.repl.iov_base, pkt.repl.iov_len);
+	char *repl = NULL;
 	chan_repl = lc_channel_new(lctx, repl);
 	lc_channel_bind(sock, chan_repl);
 
-	lc_msg_init_data(&msg_repl, pkt.repl.iov_base, pkt.repl.iov_len, NULL, NULL);
+	//lc_msg_init_data(&msg_repl, pkt.repl.iov_base, pkt.repl.iov_len, NULL, NULL);
 	lc_msg_send(chan_repl, &msg_repl);
 	free(repl);
 

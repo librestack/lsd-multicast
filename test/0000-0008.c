@@ -2,7 +2,7 @@
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
 #include "test.h"
-#include "../src/auth.h"
+#include "../src/pack.h"
 #include "../src/config.h"
 #include "../src/server.h"
 #include <librecast.h>
@@ -15,9 +15,9 @@ void *testthread(void *arg)
 	lc_ctx_t *lctx;
 	lc_socket_t *sock, *sock_repl;
 	lc_channel_t *chan_auth, *chan_repl;
-	lc_message_t msg;
-	ssize_t byt_sent;
-	ssize_t byt_recv;
+	//lc_message_t msg;
+	//ssize_t byt_sent;
+	//ssize_t byt_recv;
 	struct iovec data, repl, user, mail, pass, serv;
 	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
 	const int iov_count = sizeof iovs / sizeof iovs[0];
@@ -47,10 +47,12 @@ void *testthread(void *arg)
 	pass.iov_len = strlen(password);
 	serv.iov_base = service;
 	serv.iov_len = strlen(service);
-	test_assert(auth_pack(&data, iovs, iov_count) > 0, "auth_pack()");
+	int op = 1;
+	int flags = 42;
+	test_assert(pack_data(&data, iovs, iov_count, op, flags), "pack request");
 
 	/* TODO: encrypt payload */
-
+#if 0
 	lc_msg_init(&msg);
 	lc_msg_init_data(&msg, (&data)->iov_base, (&data)->iov_len, NULL, NULL);
 
@@ -65,7 +67,7 @@ void *testthread(void *arg)
 	test_assert(repl.iov_len == msg.len, "msg len %zu == %zu", repl.iov_len, msg.len);
 	test_expectn(replyto, msg.data, repl.iov_len);
 	lc_msg_free(&msg);
-
+#endif
 	server_stop();
 
 	lc_channel_part(chan_repl);

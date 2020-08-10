@@ -3,18 +3,19 @@
 
 PROGRAM = lsdbd
 CFLAGS += -Wall -g
-OBJS = lex.yy.o y.tab.o auth.o config.o log.o opts.o server.o $(PROGRAM).o
+OBJS = lex.yy.o y.tab.o config.o log.o opts.o pack.o server.o $(PROGRAM).o
 
 $(PROGRAM): $(OBJS)
 	$(CC) $(OBJS) -o $@ -llibrecast -llsdb
 
 $(PROGRAM).o:	$(PROGRAM).h
 
-auth.o: auth.h
 
 config.o: config.h lex.h
 
 opts.o: opts.h
+
+pack.o: pack.h
 
 server.o: server.h
 
