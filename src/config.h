@@ -15,6 +15,7 @@ struct handler_s {
 	char *		channelhash;
 	char *		key_private;
 	char *		key_public;
+	char *		module;
 	char *		scope;
 	unsigned short  port;
 };

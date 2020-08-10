@@ -153,7 +153,8 @@ handler:
 	|
 	MODULE WORD
 	{
-		free($2);
+		fprintf(stderr, "handler module = %s\n", $2);
+		handler.module = $2;
 	}
 	|
 	SCOPE WORD

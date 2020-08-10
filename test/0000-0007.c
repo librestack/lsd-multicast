@@ -18,9 +18,15 @@ int main()
 
 	test_assert(h != NULL, "config.handlers");
 	test_assert(h && h->port == 4242, "handler (1) port set");
+	test_expect("echo", h->channel);
+	test_expect("SHA3", h->channelhash);
+	test_expect("echo", h->module);
+	test_expect("asdfkashefyasdfljasdkufghaskdufhasddgflkjashdfk", h->key_public);
+	test_expect("isdhiwygasdikfhasfgdhlkjasdhahskjlhajshdfkajsf", h->key_private);
 	h = h->next;
 	test_assert(h && h->port == 1234, "handler (2) port set");
 	test_assert(h && h->next == NULL, "end of handler list");
+
 
 	config_free();
 	return fails;

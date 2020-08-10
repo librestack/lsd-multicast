@@ -30,6 +30,7 @@ void config_free()
 		config_free_ptr(p->channelhash);
 		config_free_ptr(p->key_private);
 		config_free_ptr(p->key_public);
+		config_free_ptr(p->module);
 		config_free_ptr(p->scope);
 		h = p;
 		p = p->next;
