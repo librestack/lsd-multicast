@@ -50,7 +50,8 @@ int server_start(void)
 		chan = lc_channel_new(lctx, h->channel);
 		lc_channel_bind(sock, chan);
 		lc_channel_join(chan);
-		lc_socket_listen(sock, NULL, NULL); /* FIXME: module callback */
+		lc_socket_listen(sock, mod->handle_msg, mod->handle_err);
+		mod++;
 	}
 	while (running) pause();
 	lc_ctx_free(lctx);

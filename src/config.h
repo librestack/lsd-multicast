@@ -28,7 +28,7 @@ struct module_s {
 	int (*		init)(void);
 	void (*		finit)(void);
 	void (*		handle_msg)(lc_message_t *msg);
-	void (*		handle_err)(void);
+	void (*		handle_err)(int);
 };
 
 typedef struct config_s config_t;
