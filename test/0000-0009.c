@@ -4,14 +4,13 @@
 #include "test.h"
 #include "../src/config.h"
 #include "../src/server.h"
+#include <assert.h>
 #include <librecast.h>
-#include <pthread.h>
-#include <time.h>
+#include <signal.h>
 #include <unistd.h>
 
-void *testthread(void *arg)
+void runtests(pid_t pid)
 {
-	struct timespec ts = { 0, 999999 };
 	lc_ctx_t *lctx;
 	lc_socket_t *sock;
 	lc_channel_t *chan;
@@ -26,32 +25,26 @@ void *testthread(void *arg)
 	lc_channel_bind(sock, chan);
 
 	lc_msg_init_data(&msg, &data, strlen(data), NULL, NULL);
+	test_sleep(0, 999999); /* give server a chance to be ready */
 	lc_msg_send(chan, &msg);
-
-	nanosleep(&ts, NULL); /* give server a chance to be ready */
+	test_sleep(0, 999999); /* give server a chance to read message */
 
 	lc_ctx_free(lctx);
-	server_stop();
-	pthread_exit(arg);
+	kill(pid, SIGINT); /* stop server */
 }
 
 int main()
 {
-	test_name("handler test (threaded)");
+	test_name("handler test (forking)");
 	config_include("./0000-0008.conf");
-
-	/* create thread to run tests */
-	pthread_t thread;
-	pthread_attr_t attr = {};
-	pthread_attr_init(&attr);
-	pthread_create(&thread, &attr, testthread, NULL);
-
-	/* start server */
-	test_assert(server_start() == 0, "server_start()");
-
-	/* wait for test thread to complete */
-	pthread_join(thread, NULL);
+	pid_t pid = fork();
+	assert (pid != -1);
+	if (pid)
+		runtests(pid);
+	else {
+		assert(server_start() == 0);
+		close(1); /* prevent server messing up test output */
+	}
 	config_free();
-
 	return fails;
 }
