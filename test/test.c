@@ -33,6 +33,14 @@ void test_assert(int condition, char *msg, ...)
 	}
 }
 
+void test_sleep(time_t tv_sec, long tv_nsec)
+{
+	struct timespec ts = { tv_sec, tv_nsec };
+	test_log("test thread sleeping");
+	nanosleep(&ts, NULL);
+	test_log("test thread waking");
+}
+
 void test_strcmp(char *str1, char *str2, char *msg, ...)
 {
 	if (str1 == NULL || str2 == NULL || strcmp(str1, str2)) {

@@ -5,12 +5,14 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "../src/misc.h"
 
 extern int fails;
 
 void fail_msg(char *msg, ...);
 void test_assert(int condition, char *msg, ...);
+void test_sleep(time_t tv_sec, long tv_nsec);
 void test_strcmp(char *str1, char *str2, char *msg, ...);
 void test_strncmp(char *str1, char *str2, size_t len, char *msg, ...);
 void test_expect(char *expected, char *got);
