@@ -6,12 +6,10 @@
 #include "../src/server.h"
 #include <librecast.h>
 #include <pthread.h>
-#include <time.h>
 #include <unistd.h>
 
 void *testthread(void *arg)
 {
-	struct timespec ts = { 0, 999999 };
 	lc_ctx_t *lctx;
 	lc_socket_t *sock;
 	lc_channel_t *chan;
@@ -26,9 +24,9 @@ void *testthread(void *arg)
 	lc_channel_bind(sock, chan);
 
 	lc_msg_init_data(&msg, &data, strlen(data), NULL, NULL);
+	test_sleep(0, 999999); /* give server a chance to be ready */
 	lc_msg_send(chan, &msg);
-
-	nanosleep(&ts, NULL); /* give server a chance to be ready */
+	test_sleep(0, 999999); /* give server a chance to read message */
 
 	lc_ctx_free(lctx);
 	server_stop();
