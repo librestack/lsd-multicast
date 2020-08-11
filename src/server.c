@@ -27,12 +27,12 @@ void server_stop(void)
 
 int server_start(void)
 {
-	DEBUG("Starting server");
 	struct sigaction sa = { .sa_handler = sighandler };
 	lc_ctx_t *lctx;
 	lc_socket_t *sock;
 	lc_channel_t *chan;
 
+	DEBUG("Starting server");
 	if (!config.handlers) {
 		INFO("No handlers configured.");
 		return 0;
@@ -47,8 +47,8 @@ int server_start(void)
 		chan = lc_channel_new(lctx, h->channel);
 		lc_channel_bind(sock, chan);
 		lc_channel_join(chan);
-		lc_socket_listen(sock, NULL, NULL); /* FIXME: module callback */
 		// TODO: load module
+		lc_socket_listen(sock, NULL, NULL); /* FIXME: module callback */
 	}
 	while (running) pause();
 	lc_ctx_free(lctx);
