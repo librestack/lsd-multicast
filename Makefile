@@ -18,6 +18,8 @@ clean:
 realclean:
 	cd src && $(MAKE) $@
 	cd test && $(MAKE) $@
+sparse: clean
+	CC=cgcc $(MAKE) src
 check test:
 	cd test && $(MAKE) $@
 %.test %.check:
