@@ -3,24 +3,26 @@
 
 INSTALLDIR=/usr/local/bin
 
-.PHONY: all clean src test check install
+.PHONY: all clean src modules test check install
 
 all: src
 
 install: all
 	cd src && $(MAKE) $@
 
-src:
-	cd src && $(MAKE)
-clean:
+src modules:
+	cd $@ && $(MAKE)
+
+clean realclean:
 	cd src && $(MAKE) $@
+	cd modules && $(MAKE) $@
 	cd test && $(MAKE) $@
-realclean:
-	cd src && $(MAKE) $@
-	cd test && $(MAKE) $@
+
 sparse: clean
 	CC=cgcc $(MAKE) src
+
 check test:
 	cd test && $(MAKE) $@
+
 %.test %.check:
 	cd test && $(MAKE) -B $@
