@@ -1,10 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 /* Copyright (c) 2020 Brett Sheffield <bacs@librecast.net> */
 
+#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "config.h"
+#include "log.h"
 #include "lex.h"
 
 config_t config = {
@@ -64,11 +66,19 @@ int config_modules_load(void)
 {
 	if (!config.modules) return 0;
 	config.mods = calloc(config.modules, sizeof(module_t));
+	for (module_t *mod = config.mods; mod->name; mod++) {
+		DEBUG("loading module '%s'", mod->name);
+		mod->ptr = dlopen(mod->name, RTLD_LAZY);
+		/* TODO: dlsym() required functions */
+	}
 	return config.modules;
 }
 
 void config_modules_unload(void)
 {
+	for (module_t *mod = config.mods; mod->name; mod++) {
+		dlclose(mod->ptr);
+	}
 	free(config.mods);
 }
 

@@ -6,7 +6,7 @@ CFLAGS += -Wall -g
 OBJS = lex.yy.o y.tab.o config.o log.o opts.o server.o wire.o $(PROGRAM).o
 
 $(PROGRAM): $(OBJS)
-	$(CC) $(OBJS) -o $@ -llibrecast -llsdb
+	$(CC) $(OBJS) -o $@ -llibrecast -llsdb -ldl
 
 $(PROGRAM).o:	$(PROGRAM).h
 

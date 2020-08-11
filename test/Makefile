@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 CFLAGS += -Wall -g
 OBJS := test.o ../src/lex.yy.o ../src/y.tab.o $(filter-out ../src/lsdbd.o, $(wildcard ../src/*.o))
-LDFLAGS := -llibrecast -llsdb -llcdb
+LDFLAGS := -llibrecast -llsdb -llcdb -ldl
 BOLD := "\\e[0m\\e[2m"
 RESET := "\\e[0m"
 PASS = "\\e[0m\\e[32mOK\\e[0m" # end bold, green text

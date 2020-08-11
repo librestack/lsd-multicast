@@ -31,6 +31,7 @@ int server_start(void)
 	lc_ctx_t *lctx;
 	lc_socket_t *sock;
 	lc_channel_t *chan;
+	module_t *mod;
 
 	DEBUG("Starting server");
 	if (!config.handlers) {
@@ -41,6 +42,7 @@ int server_start(void)
 	sigaction(SIGINT, &sa, NULL);
 	lctx = lc_ctx_new();
 	config_modules_load();
+	mod = config.mods;
 	for (handler_t *h = config.handlers; h; h = h->next) {
 		DEBUG("starting handler on channel '%s'", h->channel);
 		if (!h->module) continue;
@@ -48,7 +50,6 @@ int server_start(void)
 		chan = lc_channel_new(lctx, h->channel);
 		lc_channel_bind(sock, chan);
 		lc_channel_join(chan);
-		// TODO: load module
 		lc_socket_listen(sock, NULL, NULL); /* FIXME: module callback */
 	}
 	while (running) pause();
