@@ -9,15 +9,16 @@
 
 config_t config = {
 	.loglevel = 0,
+	.modules = 0,
 };
 
-void config_free_ptr(void *ptr)
+static void config_free_ptr(void *ptr)
 {
 	free(ptr);
 	ptr = NULL;
 }
 
-void config_free_handlers() {
+static void config_free_handlers(void) {
 	handler_t *h, *p;
 	p = config.handlers;
 	while (p) {
@@ -34,7 +35,7 @@ void config_free_handlers() {
 	config.handlers = NULL;
 }
 
-void config_free()
+void config_free(void)
 {
 	config_free_ptr(config.cert);
 	config_free_ptr(config.configfile);
@@ -59,7 +60,19 @@ int config_include(char *configfile)
 	return 0;
 }
 
-int config_parse()
+int config_modules_load(void)
+{
+	if (!config.modules) return 0;
+	config.mods = calloc(config.modules, sizeof(module_t));
+	return config.modules;
+}
+
+void config_modules_unload(void)
+{
+	free(config.mods);
+}
+
+int config_parse(void)
 {
 	if (!isatty(0)) {
 		while (yyparse());

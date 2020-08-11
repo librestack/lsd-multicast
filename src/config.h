@@ -20,21 +20,31 @@ struct handler_s {
 	unsigned short  port;
 };
 
+typedef struct module_s module_t;
+struct module_s {
+	char *          name;
+	void *          ptr;
+};
+
 typedef struct config_s config_t;
 struct config_s {
 	int	daemon;
 	int	debug;
 	int	loglevel;
+	int	modules;
 	char *	configfile;
 	char *	key;
 	char *	cert;
 	char *	modpath;
+	module_t *mods;
 	handler_t *handlers;
 };
 extern config_t config;
 
-void	config_free();
+void	config_free(void);
 int	config_include(char *configfile);
-int	config_parse();
+int	config_modules_load(void);
+void	config_modules_unload(void);
+int	config_parse(void);
 
 #endif /* _LSDM_CONFIG_H */

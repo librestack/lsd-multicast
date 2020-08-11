@@ -9,8 +9,8 @@
 #include "y.tab.h"
 extern int lineno;
 void yyerror(const char *str);
-int yylex();
-int yywrap();
+int yylex(void);
+int yywrap(void);
 int handlers = 0;
 handler_t *handler_last = NULL;
 handler_t handler = {};
@@ -153,6 +153,7 @@ handler:
 	{
 		fprintf(stderr, "handler module = %s\n", $2);
 		handler.module = $2;
+		config.modules++;
 	}
 	|
 	PORT NUMBER
@@ -176,7 +177,7 @@ void yyerror(const char *str)
 	fprintf(stderr,"error on line %i: %s\n", lineno, str);
 }
 
-int yywrap()
+int yywrap(void)
 {
 	return 1;
 }

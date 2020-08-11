@@ -14,7 +14,7 @@
 
 static volatile sig_atomic_t running = 1;
 
-void sighandler(int sig)
+static void sighandler(int sig)
 {
 	running = 0;
 }
@@ -40,6 +40,7 @@ int server_start(void)
 	sigemptyset(&sa.sa_mask);
 	sigaction(SIGINT, &sa, NULL);
 	lctx = lc_ctx_new();
+	config_modules_load();
 	for (handler_t *h = config.handlers; h; h = h->next) {
 		DEBUG("starting handler on channel '%s'", h->channel);
 		if (!h->module) continue;
@@ -52,5 +53,6 @@ int server_start(void)
 	}
 	while (running) pause();
 	lc_ctx_free(lctx);
+	config_modules_unload();
 	return 0;
 }
