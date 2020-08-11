@@ -28,6 +28,7 @@ test: clean build $(shell echo ????-????.c | sed 's/\.c/\.test/g') result
 
 build:
 	cd ../src && $(MAKE)
+	cd ../modules && $(MAKE)
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
 
