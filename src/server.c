@@ -13,9 +13,6 @@
 #include "wire.h"
 
 static volatile sig_atomic_t running = 1;
-lc_ctx_t *lctx;
-lc_socket_t *sock;
-lc_channel_t *chan;
 
 void sighandler(int sig)
 {
@@ -31,31 +28,28 @@ void server_stop(void)
 int server_start(void)
 {
 	DEBUG("Starting server");
-	//char dbpath[] = "/tmp/lsdbd.tmp.XXXXXX";
-	ssize_t byt_recv;
 	struct sigaction sa = { .sa_handler = sighandler };
+	lc_ctx_t *lctx;
+	lc_socket_t *sock;
+	lc_channel_t *chan;
 
+	if (!config.handlers) {
+		INFO("No handlers configured.");
+		return 0;
+	}
 	sigemptyset(&sa.sa_mask);
 	sigaction(SIGINT, &sa, NULL);
-
-	lc_message_t msg;
 	lctx = lc_ctx_new();
-	//lc_db_open(lctx, mkdtemp(dbpath));
-
-	// TODO: loop through channel list from config 
-	sock = lc_socket_new(lctx);
-	chan = lc_channel_new(lctx, "auth"); // FIXME: channel from config
-	lc_channel_bind(sock, chan);
-	lc_channel_join(chan);
-	while (running) {
-		byt_recv = lc_msg_recv(sock, &msg);
-		if (byt_recv == -1 && errno == EINTR) continue;
-		//if (byt_recv > 0) running = 0; // TODO: call protocol handler
-		lc_msg_free(&msg);
+	for (handler_t *h = config.handlers; h; h = h->next) {
+		DEBUG("starting handler on channel '%s'", h->channel);
+		sock = lc_socket_new(lctx);
+		chan = lc_channel_new(lctx, h->channel);
+		lc_channel_bind(sock, chan);
+		lc_channel_join(chan);
+		// TODO: load module
+		lc_socket_listen(sock, NULL, NULL); /* FIXME: module callback */
 	}
-	lc_channel_free(chan);
-	lc_socket_close(sock);
-
+	while (running) pause();
 	lc_ctx_free(lctx);
 	return 0;
 }

@@ -9,30 +9,29 @@
 #include <time.h>
 #include <unistd.h>
 
-void *stopthread(void *arg)
+void *testthread(void *arg)
 {
-	struct timespec t = { 0, 1 };
-	nanosleep(&t, &t);
+	struct timespec ts = { 0, 1 };
+	nanosleep(&ts, NULL);
 	server_stop();
 	pthread_exit(arg);
 }
 
 int main()
 {
-	pthread_t thread;
-
 	test_name("start/stop server");
-	config.debug = 1;
-	config.loglevel = 127;
+	config_include("./0000-0003.conf");
 
 	/* create thread to stop server */
+	pthread_t thread;
 	pthread_attr_t attr = {};
 	pthread_attr_init(&attr);
-	pthread_create(&thread, &attr, stopthread, NULL);
+	pthread_create(&thread, &attr, testthread, NULL);
 
 	test_assert(server_start() == 0, "server_start()");
 
 	pthread_join(thread, NULL);
+	config_free();
 
 	return fails;
 }
