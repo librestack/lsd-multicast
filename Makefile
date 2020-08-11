@@ -21,7 +21,7 @@ clean realclean:
 sparse: clean
 	CC=cgcc $(MAKE) src
 
-check test:
+check test sanitize:
 	cd test && $(MAKE) $@
 
 %.test %.check:

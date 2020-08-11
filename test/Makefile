@@ -2,7 +2,7 @@
 # Copyright (c) 2020 Brett Sheffield <bacs@librecast.net>
 
 SHELL := /bin/bash
-CFLAGS += -Wall -g
+CFLAGS += -Wall -g -O2
 OBJS := test.o ../src/lex.yy.o ../src/y.tab.o $(filter-out ../src/lsdbd.o, $(wildcard ../src/*.o))
 LDFLAGS := -llibrecast -llsdb -llcdb -ldl
 BOLD := "\\e[0m\\e[2m"
@@ -20,6 +20,9 @@ VALGRIND = valgrind --leak-check=full --error-exitcode=2 --errors-for-leak-kinds
 check: MEMCHECK = $(VALGRIND)
 check: FAIL = $(LEAK)
 check: test
+
+sanitize: CFLAGS += -fsanitize=address -fno-omit-frame-pointer
+sanitize: test
 
 test: clean build $(shell echo ????-????.c | sed 's/\.c/\.test/g') result
 
