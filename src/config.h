@@ -23,7 +23,7 @@ struct handler_s {
 typedef struct module_s module_t;
 struct module_s {
 	char *          name;
-	void *          ptr;
+	void *          handle;
 };
 
 typedef struct config_s config_t;
