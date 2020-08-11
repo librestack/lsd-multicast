@@ -2,7 +2,7 @@
 # Copyright (c) 2020 Brett Sheffield <bacs@librecast.net>
 
 PROGRAM = lsdbd
-CFLAGS += -Wall -g
+CFLAGS += -Wall -g -shared -fPIC
 OBJS = lex.yy.o y.tab.o config.o log.o opts.o server.o wire.o $(PROGRAM).o
 
 $(PROGRAM): $(OBJS)
