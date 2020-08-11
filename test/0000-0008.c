@@ -28,8 +28,10 @@ void *testthread(void *arg)
 	lc_channel_join(chan_repl);
 
 	lc_msg_init_data(&msg, &data, strlen(data), NULL, NULL);
+	test_sleep(0, 999999); /* give server a chance to be ready */
 	lc_msg_send(chan, &msg);
-	lc_msg_recv(sock, &msg_repl);
+	test_sleep(0, 999999); /* give server a chance to be ready */
+	lc_msg_recv(sock_repl, &msg_repl);
 	test_expectn(data, msg_repl.data, msg_repl.len);
 	lc_msg_free(&msg_repl);
 
@@ -40,7 +42,7 @@ void *testthread(void *arg)
 
 int main()
 {
-	test_name("handler test (threaded)");
+	test_name("echo handler test (threaded)");
 	config_include("./0000-0008.conf");
 
 	/* create thread to run tests */
