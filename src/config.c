@@ -17,15 +17,9 @@ void config_free_ptr(void *ptr)
 	ptr = NULL;
 }
 
-void config_free()
-{
-	config_free_ptr(config.cert);
-	config_free_ptr(config.configfile);
-	config_free_ptr(config.key);
-	config_free_ptr(config.modpath);
-
-	handler_t *h;
-	handler_t *p = config.handlers;
+void config_free_handlers() {
+	handler_t *h, *p;
+	p = config.handlers;
 	while (p) {
 		config_free_ptr(p->channel);
 		config_free_ptr(p->channelhash);
@@ -38,6 +32,15 @@ void config_free()
 		free(h);
 	}
 	config.handlers = NULL;
+}
+
+void config_free()
+{
+	config_free_ptr(config.cert);
+	config_free_ptr(config.configfile);
+	config_free_ptr(config.key);
+	config_free_ptr(config.modpath);
+	config_free_handlers();
 }
 
 int config_include(char *configfile)
