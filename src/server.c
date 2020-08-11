@@ -42,12 +42,13 @@ int server_start(void)
 	lctx = lc_ctx_new();
 	for (handler_t *h = config.handlers; h; h = h->next) {
 		DEBUG("starting handler on channel '%s'", h->channel);
+		if (!h->module) continue;
 		sock = lc_socket_new(lctx);
 		chan = lc_channel_new(lctx, h->channel);
 		lc_channel_bind(sock, chan);
 		lc_channel_join(chan);
-		// TODO: load module
 		lc_socket_listen(sock, NULL, NULL); /* FIXME: module callback */
+		// TODO: load module
 	}
 	while (running) pause();
 	lc_ctx_free(lctx);
