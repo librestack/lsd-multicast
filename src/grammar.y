@@ -149,6 +149,13 @@ handler:
 		handler.key_public = $2;
 	}
 	|
+	MODULE FILENAME
+	{
+		fprintf(stderr, "handler module = %s\n", $2);
+		handler.module = $2;
+		config.modules++;
+	}
+	|
 	MODULE WORD
 	{
 		fprintf(stderr, "handler module = %s\n", $2);

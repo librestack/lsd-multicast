@@ -64,21 +64,27 @@ int config_include(char *configfile)
 
 int config_modules_load(void)
 {
+	TRACE("%s()", __func__);
+	module_t *mod;
+
 	if (!config.modules) return 0;
-	config.mods = calloc(config.modules, sizeof(module_t));
-	for (module_t *mod = config.mods; mod->name; mod++) {
-		DEBUG("loading module '%s'", mod->name);
+	mod = config.mods = calloc(config.modules, sizeof(module_t));
+	for (handler_t *h = config.handlers; h; h = h->next) {
+		if (!h->module) continue;
+		DEBUG("loading module '%s'", h->module);
+		mod->name = h->module;
 		mod->ptr = dlopen(mod->name, RTLD_LAZY);
+		if (mod->ptr) { DEBUG("%s loaded", mod->name); }
+		else { DEBUG("failed to load %s", mod->name); }
 		/* TODO: dlsym() required functions */
+		mod++;
 	}
 	return config.modules;
 }
 
 void config_modules_unload(void)
 {
-	for (module_t *mod = config.mods; mod->name; mod++) {
-		dlclose(mod->ptr);
-	}
+	for (module_t *mod = config.mods; mod && mod->ptr; mod++) dlclose(mod->ptr);
 	free(config.mods);
 }
 
