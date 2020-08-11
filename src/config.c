@@ -76,7 +76,10 @@ int config_modules_load(void)
 		mod->handle = dlopen(mod->name, RTLD_LAZY);
 		if (mod->handle) { DEBUG("%s loaded", mod->name); }
 		else { DEBUG("failed to load %s", mod->name); }
-		/* TODO: dlsym() required functions */
+		if ((mod->init = dlsym(mod->handle, "init"))) mod->init();
+		mod->finit = dlsym(mod->handle, "finit");
+		mod->handle_msg = dlsym(mod->handle, "handle_msg");
+		mod->handle_err = dlsym(mod->handle, "handle_err");
 		mod++;
 	}
 	return config.modules;
@@ -84,7 +87,10 @@ int config_modules_load(void)
 
 void config_modules_unload(void)
 {
-	for (module_t *mod = config.mods; mod && mod->handle; mod++) dlclose(mod->handle);
+	for (module_t *mod = config.mods; mod && mod->handle; mod++) {
+		if (mod->finit) mod->finit();
+		dlclose(mod->handle);
+	}
 	free(config.mods);
 }
 

@@ -5,6 +5,7 @@
 #define _LSDM_CONFIG_H 1
 
 #include "y.tab.h"
+#include <librecast/types.h>
 
 #define CONFIG_LOGLEVEL_MAX 127
 
@@ -24,6 +25,10 @@ typedef struct module_s module_t;
 struct module_s {
 	char *          name;
 	void *          handle;
+	int (*		init)(void);
+	void (*		finit)(void);
+	void (*		handle_msg)(lc_message_t *msg);
+	void (*		handle_err)(void);
 };
 
 typedef struct config_s config_t;
