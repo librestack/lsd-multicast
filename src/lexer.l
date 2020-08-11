@@ -22,6 +22,7 @@ key				return KEY;
 key_priv			return KEYPRIV;
 key_pub				return KEYPUB;
 loglevel			return LOGLEVEL;
+modpath				return MODPATH;
 module				return MODULE;
 port				return PORT;
 proto				return PROTO;

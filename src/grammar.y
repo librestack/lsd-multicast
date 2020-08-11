@@ -40,6 +40,7 @@ handler_t handler = {};
 %token <sval> KEYPRIV
 %token <sval> KEYPUB
 %token <ival> LOGLEVEL
+%token <sval> MODPATH
 %token <sval> MODULE
 %token <sval> NEWLINE
 %token <ival> NUMBER
@@ -105,6 +106,12 @@ global:
 	{
 		fprintf(stderr, "cert = '%s'\n", $2);
 		config.cert = $2;
+	}
+	|
+	MODPATH FILENAME
+	{
+		fprintf(stderr, "modpath = '%s'\n", $2);
+		config.modpath = $2;
 	}
 	;
 

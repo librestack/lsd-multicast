@@ -22,6 +22,7 @@ void config_free()
 	config_free_ptr(config.cert);
 	config_free_ptr(config.configfile);
 	config_free_ptr(config.key);
+	config_free_ptr(config.modpath);
 
 	handler_t *h;
 	handler_t *p = config.handlers;

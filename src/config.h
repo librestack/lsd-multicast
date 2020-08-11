@@ -28,6 +28,7 @@ struct config_s {
 	char *	configfile;
 	char *	key;
 	char *	cert;
+	char *	modpath;
 	handler_t *handlers;
 };
 extern config_t config;
