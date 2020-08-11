@@ -7,7 +7,8 @@ void init(void)
 {
 }
 
-void finit(void) {
+void finit(void)
+{
 }
 
 void handle_msg(lc_message_t *msg)

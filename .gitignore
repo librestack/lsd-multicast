@@ -5,3 +5,4 @@ y.tab.h
 lsdbd
 *.swp
 *.o
+*.so
