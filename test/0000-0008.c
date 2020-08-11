@@ -11,8 +11,17 @@
 
 void *testthread(void *arg)
 {
-	struct timespec ts = { 0, 10 };
-	nanosleep(&ts, NULL);
+	lc_ctx_t *lctx;
+	lc_socket_t *sock;
+	lc_channel_t *chan;
+	int opt = 1;
+
+	lctx = lc_ctx_new();
+	sock = lc_socket_new(lctx);
+	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
+	chan = lc_channel_new(lctx, config.handlers->channel);
+
+	lc_ctx_free(lctx);
 	server_stop();
 	pthread_exit(arg);
 }
