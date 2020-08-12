@@ -23,8 +23,6 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	assert(config.handlers != NULL);
 
-	//const int iov_count = 5;
-	//struct iovec iovs[iov_count];
 
 	/* (0) unpack outer packet */
 	DEBUG("auth module unpacking outer packet");
@@ -70,10 +68,15 @@ static void auth_op_user_add(lc_message_t *msg)
 	}
 	DEBUG("auth module decryption successful");
 
-	/* TODO (1b) unpack inner data fields */
+	/* (1b) unpack inner data fields */
+	const int iov_count = 5;
+	struct iovec iovs[iov_count];
 	DEBUG("auth module unpacking fields");
-	//wire_unpack(&payload, iovs, iov_count, &op, &flags);
-
+	struct iovec clearpkt = { .iov_base = data, .iov_len = pkt.iov_len - crypto_box_MACBYTES };
+	wire_unpack(&clearpkt, iovs, iov_count, &op, &flags);
+	for (int i = 1; i < iov_count; i++) {
+		DEBUG("[%i] %.*s", i, (int)iovs[i].iov_len, (char *)iovs[i].iov_base);
+	}
 
 	/* TODO: (2) create token */
 	/* TODO: (3) create user record in db */
