@@ -9,7 +9,7 @@ COMMON_OBJECTS := ../src/lex.yy.o ../src/y.tab.o $(filter-out ../src/lsdbd.o, $(
 all: $(MODULES)
 
 %.so: %.o $(COMMON_OBJECTS)
-	$(CC) $(CFLAGS) -o $@  $^
+	$(CC) $(CFLAGS) -o $@ $^
 
 %.o: %.h
 

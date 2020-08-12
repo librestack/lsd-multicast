@@ -16,15 +16,16 @@ int main()
 	config.loglevel = 127;
 
 	struct iovec data;
-	struct iovec repl = { .iov_base = "replyto" };
-	struct iovec user = { .iov_base = "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu" };
-	struct iovec mail = { .iov_base = "email" };
-	struct iovec pass = { .iov_base = "password" };
-	struct iovec serv = { .iov_base = "service" };
+	struct iovec repl = { .iov_base = "r" };
+	struct iovec user = { .iov_base = "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu" };
+	//struct iovec user = { .iov_base = "u" };
+	struct iovec mail = { .iov_base = "e" };
+	struct iovec pass = { .iov_base = "p" };
+	struct iovec serv = { .iov_base = "s" };
 	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
 	struct iovec iovc[5] = {};
 	const int iov_count = sizeof iovs / sizeof iovs[0];
-	size_t len_check;
+	size_t len_check = 2, len_packed;
 	uint8_t flags = 0;
 	uint8_t op = 2;
 	void *ptr;
@@ -35,16 +36,16 @@ int main()
 	test_assert(wire_pack(NULL, NULL, iov_count, op, flags) == -1, "ensure data != NULL");
 	test_assert(errno == EINVAL, "data NULL => EINVAL");
 
-	len_check = 1 + iov_count;
 	for (int i = 0; i < iov_count; i++) {
 		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
-		len_check += iovs[i]->iov_len;
-		for (size_t j = UINT8_MAX; j <= iovs[i]->iov_len; j += UINT8_MAX) {
+		len_check += iovs[i]->iov_len + 1; /* 1 byte for length + data */
+		for (size_t j = iovs[i]->iov_len; j > 0x7f; j >>= 7) {
 			len_check++; /* extra byte needed for length */
 		}
 	}
-	test_assert(wire_pack(&data, iovs, iov_count, op, flags) == len_check,
-			"pack some data");
+	len_packed = len_check;
+	test_assert(wire_pack(&data, iovs, iov_count, op, flags) == len_check, "pack some data");
+	test_assert(data.iov_len == len_check,"data.iov_len (%zu) == (%zu) len_check", data.iov_len, len_check);
 
 	/* check opcode & flags */
 	errno = 0;
@@ -74,7 +75,9 @@ int main()
 	/* unpack */
 	op_check = 0;
 	flags_check = 0;
-	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) > 0, "unpack");
+	int res;
+	res = wire_unpack(&data, iovc, iov_count, &op_check, &flags_check);
+	test_assert(res == len_packed, "unpack (%i == %i)", res, len_packed);
 	test_assert(op_check == op, "opcode");
 	test_assert(flags_check == flags, "flags");
 	for (int i = 0; i < iov_count; i++) {

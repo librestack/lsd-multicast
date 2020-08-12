@@ -2,7 +2,7 @@
 # Copyright (c) 2020 Brett Sheffield <bacs@librecast.net>
 
 SHELL := /bin/bash
-CFLAGS += -Wall -g -O2
+CFLAGS += -Wall -g
 OBJS := test.o ../src/lex.yy.o ../src/y.tab.o $(filter-out ../src/lsdbd.o, $(wildcard ../src/*.o))
 LDFLAGS := -llibrecast -llsdb -llcdb -ldl
 BOLD := "\\e[0m\\e[2m"

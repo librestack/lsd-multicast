@@ -10,8 +10,11 @@ all: src
 install: all
 	cd src && $(MAKE) $@
 
-src modules:
+src:
 	cd $@ && $(MAKE)
+
+modules:
+	cd $@ && $(MAKE) -B
 
 clean realclean:
 	cd src && $(MAKE) $@
@@ -24,5 +27,5 @@ sparse: clean
 check test sanitize:
 	cd test && $(MAKE) $@
 
-%.test %.check:
+%.test %.check: modules
 	cd test && $(MAKE) -B $@

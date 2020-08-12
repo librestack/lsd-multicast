@@ -13,11 +13,12 @@ ssize_t wire_pack(struct iovec *data, struct iovec *iovs[], int iov_count,
 		return -1;
 	}
 	/* calculate length */
-	data->iov_len = 1;
+	data->iov_len = 2; /* 2 bytes for opcode + flags*/
 	for (int i = 0; i < iov_count; i++) {
+		/* 1 byte for length + data */
 		data->iov_len += iovs[i]->iov_len + 1;
 		for (n = htole64(iovs[i]->iov_len); n > 0x7f; n >>= 7)
-			(data->iov_len)++;
+			data->iov_len++; /* extra length byte */
 	}
 	ptr = data->iov_base = calloc(1, data->iov_len + 1);
 	memset(ptr++, op, 1);
@@ -30,7 +31,7 @@ ssize_t wire_pack(struct iovec *data, struct iovec *iovs[], int iov_count,
 		memcpy(ptr, iovs[i]->iov_base, iovs[i]->iov_len);
 		ptr += iovs[i]->iov_len;
 	}
-	return data->iov_len++;
+	return data->iov_len;
 }
 
 ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count,
