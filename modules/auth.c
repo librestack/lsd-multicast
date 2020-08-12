@@ -20,22 +20,18 @@ static void auth_op_user_add(lc_message_t *msg)
 	TRACE("auth.so %s()", __func__);
 
 	struct iovec data = { .iov_base = msg->data, .iov_len = msg->len };
-	//struct iovec repl;
-	//struct iovec user;
-	//struct iovec mail;
-	//struct iovec pass;
-	//struct iovec serv;
-	//struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
-	struct iovec iovs[5] = {};
-	const int iov_count = sizeof iovs / sizeof iovs[0];
+	const int iov_count = 5;
+	struct iovec iovs[iov_count];
 	uint8_t op, flags;
 
 	wire_unpack(&data, iovs, iov_count, &op, &flags);
+
 	assert(op == AUTH_OP_USER_ADD);
-	assert(flags == 7);
-	assert(strncmp(iovs[0].iov_base, "aaaa", iovs[0].iov_len) == 0);
+	assert(flags == 9);
+	assert(strncmp(iovs[0].iov_base, "repl", iovs[0].iov_len) == 0);
 	for (int i = 0; i < iov_count; i++) {
-		DEBUG("[%i] (%zu) '%.*s'", i, iovs[i].iov_len, (int)iovs[i].iov_len, iovs[i].iov_base);
+		DEBUG("[%i] (%zu) '%.*s'", i, iovs[i].iov_len,
+				(int)iovs[i].iov_len, iovs[i].iov_base);
 	}
 
 	/* TODO 
@@ -98,8 +94,10 @@ void handle_msg(lc_message_t *msg)
 	DEBUG("%zu bytes received", msg->len);
 
 	/* TODO: read opcode and pass to handler */
-	uint8_t opcode = *((uint8_t *)msg->data);
+	uint8_t opcode = ((uint8_t *)msg->data)[0];
+	uint8_t flags = ((uint8_t *)msg->data)[1];
 	DEBUG("opcode read: %u", opcode);
+	DEBUG("flags read: %u", flags);
 
 	switch (opcode) {
 		AUTH_OPCODES(AUTH_OPCODE_FUN)

@@ -16,23 +16,29 @@ void runtests(pid_t pid)
 	lc_ctx_t *lctx;
 	lc_socket_t *sock, *sock_repl;
 	lc_channel_t *chan, *chan_repl;
-	lc_message_t msg, msg_repl;
+	lc_message_t msg;
 	char replychannel[] = "repl";
 	int opt = 1;
 	struct iovec data;
 	struct iovec repl = { .iov_base = replychannel };
-	struct iovec user = { .iov_base = "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu" };
+	struct iovec user = { .iov_base = "username" };
 	struct iovec mail = { .iov_base = "email" };
 	struct iovec pass = { .iov_base = "password" };
 	struct iovec serv = { .iov_base = "service" };
-	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
-	//struct iovec iovc[5] = {};
+	struct iovec blah = { .iov_base = "blah" };
+	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv, &blah };
 	const int iov_count = sizeof iovs / sizeof iovs[0];
 	uint8_t op = AUTH_OP_USER_ADD;
-	uint8_t flags = 7;
+	uint8_t flags = 9;
 	size_t len;
 
-	test_assert((len = wire_pack(&data, iovs, iov_count, op, flags)) > 0, "pack some data");
+	/* set lengths */
+	for (int i = 0; i < iov_count; i++) {
+		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
+	}
+
+	len = wire_pack(&data, iovs, iov_count, op, flags);
+	test_assert(len > 0, "pack some data");
 	test_log("******************* len = %zu", len);
 	test_log("******************* data.iov_len = %zu", data.iov_len);
 
@@ -40,7 +46,7 @@ void runtests(pid_t pid)
 	sock = lc_socket_new(lctx);
 	sock_repl = lc_socket_new(lctx);
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
-	chan = lc_channel_new(lctx, config.handlers->channel);
+	chan = lc_channel_new(lctx, "asdfkashefyasdfljasdkufghaskdufhasddgflkjashdfk");
 	//chan_repl = lc_channel_new(lctx, repl.iov_base);
 	chan_repl = lc_channel_new(lctx, "repl");
 
@@ -53,6 +59,7 @@ void runtests(pid_t pid)
 	test_log("packed %zu bytes ready to send", data.iov_len);
 	test_sleep(0, 999999); /* give server a chance to be ready */
 	lc_msg_send(chan, &msg);
+	free(data.iov_base);
 	test_sleep(0, 99999999); /* give server a chance to be ready */
 	//lc_msg_recv(sock, &msg_repl);
 
