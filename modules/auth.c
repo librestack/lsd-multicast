@@ -6,6 +6,7 @@
 #include "../src/wire.h"
 #include <assert.h>
 #include <librecast.h>
+#include <sodium.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -24,20 +25,19 @@ static void auth_op_user_add(lc_message_t *msg)
 	struct iovec iovs[iov_count];
 	uint8_t op, flags;
 
+	/* TODO: (0) decrypt packet */
+
+	// crypto_box_open_easy
+
+	/* (1) unpack packet */
 	wire_unpack(&data, iovs, iov_count, &op, &flags);
 
-	assert(op == AUTH_OP_USER_ADD);
-	assert(flags == 9);
-	assert(strncmp(iovs[0].iov_base, "repl", iovs[0].iov_len) == 0);
-	for (int i = 0; i < iov_count; i++) {
-		DEBUG("[%i] (%zu) '%.*s'", i, iovs[i].iov_len,
-				(int)iovs[i].iov_len, iovs[i].iov_base);
-	}
 
-	/* TODO 
-	 * - map fields to opcodes in auth.h
-	 * - wire_unpack() here
-	 * - process */
+	/* TODO: (2) create token */
+	/* TODO: (3) create user record in db */
+	/* TODO: (4) email token */
+	/* TODO: (5) reply to reply address */
+
 };
 
 static void auth_op_user_delete(lc_message_t *msg)

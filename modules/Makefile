@@ -3,13 +3,14 @@
 
 CFLAGS += -Wall -g -shared -fPIC
 MODULES := echo.so auth.so
-#COMMON_OBJECTS := ../src/config.o ../src/log.o ../src/wire.o
-COMMON_OBJECTS := ../src/lex.yy.o ../src/y.tab.o $(filter-out ../src/lsdbd.o, $(wildcard ../src/*.o))
+NOTOBJS := ../src/lsdbd.o ../src/keymgr.o
+COMMON_OBJECTS := ../src/lex.yy.o ../src/y.tab.o $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))
+LIBS := -lsodium
 
 all: $(MODULES)
 
 %.so: %.o $(COMMON_OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 %.o: %.h
 

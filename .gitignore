@@ -6,3 +6,4 @@ lsdbd
 *.swp
 *.o
 *.so
+src/keymgr

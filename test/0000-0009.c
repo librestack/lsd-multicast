@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <librecast.h>
 #include <signal.h>
+#include <sodium.h>
 #include <unistd.h>
 
 void runtests(pid_t pid)
@@ -17,55 +18,91 @@ void runtests(pid_t pid)
 	lc_socket_t *sock, *sock_repl;
 	lc_channel_t *chan, *chan_repl;
 	lc_message_t msg;
-	char replychannel[] = "repl";
 	int opt = 1;
 	struct iovec data;
-	struct iovec repl = { .iov_base = replychannel };
+
+	/* generate keypair & use as reply address */
+	unsigned char pk[crypto_box_PUBLICKEYBYTES];
+	unsigned char sk[crypto_box_SECRETKEYBYTES];
+	test_assert(crypto_box_keypair(pk, sk) != -1, "crypto_box_keypair()");
+
+	/* (1) build packet */
+	struct iovec repl = { .iov_base = pk, .iov_len = crypto_box_PUBLICKEYBYTES };
 	struct iovec user = { .iov_base = "username" };
 	struct iovec mail = { .iov_base = "email" };
 	struct iovec pass = { .iov_base = "password" };
 	struct iovec serv = { .iov_base = "service" };
-	struct iovec blah = { .iov_base = "blah" };
-	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv, &blah };
+	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
 	const int iov_count = sizeof iovs / sizeof iovs[0];
 	uint8_t op = AUTH_OP_USER_ADD;
 	uint8_t flags = 9;
-	size_t len;
-
-	/* set lengths */
-	for (int i = 0; i < iov_count; i++) {
+	ssize_t len;
+	handler_t *h = config.handlers;
+	for (int i = 1; i < iov_count; i++) {
 		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
 	}
-
 	len = wire_pack(&data, iovs, iov_count, op, flags);
-	test_assert(len > 0, "pack some data");
-	test_log("******************* len = %zu", len);
-	test_log("******************* data.iov_len = %zu", data.iov_len);
+	test_assert(len > 0, "wire_pack() returned %i", len);
 
+	/* (2) encrypt packet */
+	unsigned char authpubkey[crypto_box_PUBLICKEYBYTES];
+
+	test_assert(h != NULL, "handlers");
+	test_assert(h->key_public != NULL, "handler public key");
+	test_assert(h->key_private != NULL, "handler privkey");
+	test_assert(h->channel != NULL, "channel");
+	test_assert(!strcmp("d20d09899e69d4adf5069099cad784499802b0235c0aa7398b9d0622bc18a676",
+				config.handlers->key_public), "key_public");
+
+	sodium_hex2bin(authpubkey,
+			crypto_box_PUBLICKEYBYTES,
+			config.handlers->key_public,
+			crypto_box_PUBLICKEYBYTES * 2,
+			NULL,
+			0,
+			NULL);
+	const size_t cipherlen = crypto_box_MACBYTES + data.iov_len;
+	test_assert(sodium_init() != -1, "sodium_init()");
+	unsigned char nonce[crypto_box_NONCEBYTES];
+	unsigned char ciphertext[cipherlen];
+	randombytes_buf(nonce, sizeof nonce);
+	test_assert(!crypto_box_easy(ciphertext, (unsigned char *)data.iov_base, data.iov_len, nonce, authpubkey, sk), "crypto_box_easy()");
+
+	/* (2b) now pack encrypted payload with public key prepended */
+	struct iovec key = { .iov_base = pk, .iov_len = crypto_box_PUBLICKEYBYTES };
+	struct iovec crypted = { .iov_base = ciphertext, .iov_len = cipherlen };
+	struct iovec *payload[] = { &key, &crypted };
+	struct iovec pkt;
+	len = wire_pack(&pkt, payload, 2, op, flags);
+
+	/* (3) bind to send/receive channels, join recv channel */
 	lctx = lc_ctx_new();
 	sock = lc_socket_new(lctx);
 	sock_repl = lc_socket_new(lctx);
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
-	chan = lc_channel_new(lctx, "asdfkashefyasdfljasdkufghaskdufhasddgflkjashdfk");
-	//chan_repl = lc_channel_new(lctx, repl.iov_base);
-	chan_repl = lc_channel_new(lctx, "repl");
-
-	test_log("test 0000-0008 binding socket");
+	chan = lc_channel_new(lctx, h->channel);
+	chan_repl = lc_channel_nnew(lctx, pk, crypto_box_PUBLICKEYBYTES);
 	lc_channel_bind(sock, chan);
 	lc_channel_bind(sock_repl, chan_repl);
-	//lc_channel_join(chan_repl);
+	lc_channel_join(chan_repl);
 
-	lc_msg_init_data(&msg, data.iov_base, data.iov_len, NULL, NULL);
+	/* (4) send packet */
+	lc_msg_init_data(&msg, pkt.iov_base, pkt.iov_len, NULL, NULL);
 	test_log("packed %zu bytes ready to send", data.iov_len);
 	test_sleep(0, 999999); /* give server a chance to be ready */
 	lc_msg_send(chan, &msg);
+	free(pkt.iov_base);
 	free(data.iov_base);
-	test_sleep(0, 99999999); /* give server a chance to be ready */
-	//lc_msg_recv(sock, &msg_repl);
 
-	/* TODO: read and verify reply */
+	/* TODO: (5) await reply */
+	//lc_msg_recv(sock, &msg_repl);
 	//test_assert(msg_repl.len > 0, "message has nonzero length");
 
+	/* TODO: (6) decrypt reply */
+	/* TODO: (7) handle response/error */
+	/* TODO: (8) verify email sent? */
+
+	test_sleep(0, 99999999); /* give server a chance to be ready */
 	lc_ctx_free(lctx);
 	kill(pid, SIGINT); /* stop server */
 }
