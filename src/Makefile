@@ -5,11 +5,17 @@ PROGRAM = lsdbd
 CFLAGS += -Wall -g -shared -fPIC
 OBJS = lex.yy.o y.tab.o config.o log.o opts.o server.o wire.o $(PROGRAM).o
 
+all: $(PROGRAM) keymgr
+
 $(PROGRAM): $(OBJS)
 	$(CC) $(OBJS) -o $@ -llibrecast -llsdb -ldl
 
 $(PROGRAM).o:	$(PROGRAM).h
 
+keymgr: keymgr.o
+	$(CC) -o $@ $^ -lsodium
+
+keymgr.o:
 
 config.o: config.h lex.h
 
@@ -35,7 +41,7 @@ lex.h lex.yy.c: lexer.l y.tab.h
 .PHONY: clean
 
 clean:
-	rm -f *.o $(PROGRAM)
+	rm -f *.o $(PROGRAM) keymgr
 
 realclean: clean
 	rm -f y.tab.c y.tab.h lex.yy.c lex.h
