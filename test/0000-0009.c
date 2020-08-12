@@ -68,12 +68,13 @@ void runtests(pid_t pid)
 	randombytes_buf(nonce, sizeof nonce);
 	test_assert(!crypto_box_easy(ciphertext, (unsigned char *)data.iov_base, data.iov_len, nonce, authpubkey, sk), "crypto_box_easy()");
 
-	/* (2b) now pack encrypted payload with public key prepended */
-	struct iovec key = { .iov_base = pk, .iov_len = crypto_box_PUBLICKEYBYTES };
+	/* (2b) now pack encrypted payload with public key and nonce prepended */
+	struct iovec iovkey = { .iov_base = pk, .iov_len = crypto_box_PUBLICKEYBYTES };
+	struct iovec iovnon = { .iov_base = nonce, .iov_len = crypto_box_NONCEBYTES };
 	struct iovec crypted = { .iov_base = ciphertext, .iov_len = cipherlen };
-	struct iovec *payload[] = { &key, &crypted };
+	struct iovec *payload[] = { &iovkey, &iovnon, &crypted };
 	struct iovec pkt;
-	len = wire_pack(&pkt, payload, 2, op, flags);
+	len = wire_pack(&pkt, payload, 3, op, flags);
 
 	/* (3) bind to send/receive channels, join recv channel */
 	lctx = lc_ctx_new();
