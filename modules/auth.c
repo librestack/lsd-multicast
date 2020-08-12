@@ -36,7 +36,7 @@ static void auth_op_user_add(lc_message_t *msg)
 		return;
 	}
 
-	/* TODO: (1) decrypt packet */
+	/* (1) decrypt packet */
 	DEBUG("auth module decrypting contents");
 	unsigned char data[pkt.iov_len - crypto_box_MACBYTES];
 	//struct iovec iovc[5] = {};
@@ -62,15 +62,13 @@ static void auth_op_user_add(lc_message_t *msg)
 	sodium_bin2hex(hex, hexlen, senderkey, crypto_box_PUBLICKEYBYTES);
 	DEBUG("senderkey: %s", hex);
 
-	if (crypto_box_open_easy(data, payload[2].iov_base, payload[2].iov_len, nonce,
-		senderkey, privatekey) != 0) /* FIXME unintialized value data.iov_base */
+	if (crypto_box_open_easy(data, payload[2].iov_base, payload[2].iov_len,
+				nonce, senderkey, privatekey) != 0)
 	{
 		ERROR("crypto_box_open_easy() failed");
 		return;
 	}
 	DEBUG("auth module decryption successful");
-
-	free(pkt.iov_base);
 
 	/* TODO (1b) unpack inner data fields */
 	DEBUG("auth module unpacking fields");
