@@ -3,7 +3,8 @@
 
 SHELL := /bin/bash
 CFLAGS += -Wall -g
-OBJS := test.o ../src/lex.yy.o ../src/y.tab.o $(filter-out ../src/lsdbd.o, $(wildcard ../src/*.o))
+NOTOBJS := ../src/lsdbd.o ../src/keymgr.o
+OBJS := test.o ../src/lex.yy.o ../src/y.tab.o $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))
 LDFLAGS := -llibrecast -llsdb -llcdb -ldl
 BOLD := "\\e[0m\\e[2m"
 RESET := "\\e[0m"
