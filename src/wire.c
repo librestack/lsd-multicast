@@ -30,7 +30,7 @@ ssize_t wire_pack(struct iovec *data, struct iovec *iovs[], int iov_count,
 		memcpy(ptr, iovs[i]->iov_base, iovs[i]->iov_len);
 		ptr += iovs[i]->iov_len;
 	}
-	return data->iov_len;
+	return data->iov_len++;
 }
 
 ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count,
@@ -38,12 +38,17 @@ ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count,
 {
 	void *ptr = data->iov_base;
 	size_t len;
+	void *endptr = data->iov_base + data->iov_len;
 	*op = ((uint8_t *)ptr++)[0];
 	*flags = ((uint8_t *)ptr++)[0];
-	for (int i = 0; ptr < data->iov_base + data->iov_len; i++) {
+	for (int i = 0; ptr < endptr; i++) {
 		uint64_t n = 0, shift = 0;
 		uint8_t b;
 		do {
+			if (ptr >= endptr) {
+				errno = EILSEQ;
+				return -1;
+			}
 			b = ((uint8_t *)ptr++)[0];
 			n |= (b & 0x7f) << shift;
 			shift += 7;
@@ -51,6 +56,10 @@ ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count,
 		len = (size_t)le64toh(n);
 		iovs[i].iov_len = len;
 		iovs[i].iov_base = ptr;
+		if (ptr + len > endptr) {
+			errno = EBADMSG;
+			return -1;
+		}
 		ptr += len;
 	}
 	return data->iov_len;

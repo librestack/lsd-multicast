@@ -24,7 +24,7 @@ int main()
 	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
 	struct iovec iovc[5] = {};
 	const int iov_count = sizeof iovs / sizeof iovs[0];
-	size_t len_check, len_packed;
+	size_t len_check;
 	uint8_t flags = 0;
 	uint8_t op = 2;
 	void *ptr;
@@ -43,7 +43,6 @@ int main()
 			len_check++; /* extra byte needed for length */
 		}
 	}
-	len_packed = len_check;
 	test_assert(wire_pack(&data, iovs, iov_count, op, flags) == len_check,
 			"pack some data");
 
@@ -75,14 +74,39 @@ int main()
 	/* unpack */
 	op_check = 0;
 	flags_check = 0;
-	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == len_packed, "unpack");
+	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) > 0, "unpack");
 	test_assert(op_check == op, "opcode");
 	test_assert(flags_check == flags, "flags");
 	for (int i = 0; i < iov_count; i++) {
-		test_assert(iovc[i].iov_len == iovs[i]->iov_len, "length check");
-		test_expectn(iovc[i].iov_base, iovs[i]->iov_base, iovc[i].iov_len);
+		test_assert(iovs[i]->iov_len == iovc[i].iov_len, "length check");
+		test_expectn(iovs[i]->iov_base, iovc[i].iov_base, iovc[i].iov_len);
 	}
+	free(data.iov_base);
 
+	data.iov_len = 3;
+	data.iov_base = malloc(data.iov_len);
+	memset(data.iov_base + 2, 0x80, 1);
+	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == -1,
+			"use continuation bit to attempt read beyond end of data (EILSEQ)");
+	test_assert(errno == EILSEQ, "errno == EILSEQ");
+	free(data.iov_base);
+
+	data.iov_len = 4;
+	data.iov_base = malloc(data.iov_len);
+	memset(data.iov_base + 2, htole64(1), 1);
+	memset(data.iov_base + 3, 'a', 1);
+	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == data.iov_len,
+			"use length to read exact end of data (OK)");
+	free(data.iov_base);
+
+	data.iov_len = 4;
+	data.iov_base = malloc(data.iov_len);
+	memset(data.iov_base + 2, htole64(2), 1); /* try to read one byte beyond end of data */
+	memset(data.iov_base + 3, 'a', 1);
+	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == -1,
+			"use length to read beyond end of data (EBADMSG)");
+	test_assert(errno == EBADMSG, "errno == EBADMSG");
+	//test_assert(((uint8_t *)data.iov_base + data.iov_len)[0] == 'a', "read beyond end");
 	free(data.iov_base);
 
 	return fails;
