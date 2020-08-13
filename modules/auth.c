@@ -6,6 +6,7 @@
 #include "../src/log.h"
 #include "../src/wire.h"
 #include <assert.h>
+#include <curl/curl.h>
 #include <librecast.h>
 #include <sodium.h>
 #include <stdio.h>
@@ -14,14 +15,17 @@
 #include <time.h>
 #include <unistd.h>
 
+/* TODO: from config */
+#define FROM "noreply@librecast.net"
+
 static int auth_mail_token(char *subject, char *to, char *token)
 {
 	char filename[] = "/tmp/lsd-auth-mail-XXXXXX";
 	FILE *f;
 	time_t t;
+	int ret = 0;
 	int fd;
 
-	/* TODO: create temporary file */
 	if ((fd = mkstemp(filename)) == -1) {
 		ERROR("error creating tempfile: %s", strerror(errno));
 		return -1;
@@ -31,37 +35,50 @@ static int auth_mail_token(char *subject, char *to, char *token)
 		return -1;
 	}
 
-	/* date */
 	t = time(NULL);
 	char ts[40];
 	char welcometext[] = "You (or someone on your behalf) has signed up to Librecast Live using this email address.  To verify your address, please click the following link\r\n";
 	strftime(ts, sizeof ts, "%a, %d %b %Y %T %z", localtime(&t));
 	fprintf(f, "Date: %s\r\n", ts);
-	fprintf(f, "From: Librecast Live <noreply@librecast.net>\r\n"); /* TODO: from config */
-	fprintf(f, "To: <%s>\r\n", to);
+	fprintf(f, "From: %s\r\n", FROM); /* TODO: from config */
+	fprintf(f, "To: Librecast Live <%s>\r\n", to);
 	fprintf(f, "Subject: %s\r\n", subject);
 	fprintf(f, "\r\n"); /* blank line */
 	fprintf(f, "%s", welcometext); /* TODO: from config */
 	fprintf(f, "    https://live.librecast.net/verifyemail/%s\r\n", token);
 	fprintf(f, "We look forward to you joining us soon!\r\n");
+	fflush(f); rewind(f);
 
-
-
-	//char *body;
-	//size_t bodylen = snprintf(NULL,
-	//    "Click to confirm your email address:\r\n    https://live.librecast.net/verifyemail/%s",
-	//    hextoken);
-	//mail_send(config.mailfrom, iovs[2], config.subject_newuser, body);
-	//mail_send("Librecast Live <noreply@librecast.net>",
-	//	  iovs[2],
-	//	  "Welcome to Librecast Live - Confirm Your Email Address",
-	//	  body);
-
-
+	/* send email */
+	CURL *curl = NULL;
+	CURLcode res = CURLE_OK;
+	struct curl_slist *recipients = NULL;
+	if (curl_global_init(CURL_GLOBAL_ALL)) {
+		goto exit_err;
+		ret = -1;
+	}
+	curl = curl_easy_init();
+	if (curl) {
+		curl_easy_setopt(curl, CURLOPT_URL, "smtp://smtp.gladserv.com:25"); /* FIXME config */
+		curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
+		curl_easy_setopt(curl, CURLOPT_MAIL_FROM, FROM);
+		recipients = curl_slist_append(recipients, to);
+		curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
+		curl_easy_setopt(curl, CURLOPT_READDATA, f);
+		curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
+		if (config.debug) curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+		if (curl_easy_perform(curl) != CURLE_OK) {
+			ERROR("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+		}
+		curl_slist_free_all(recipients);
+		curl_easy_cleanup(curl);
+	}
+	curl_global_cleanup();
+exit_err:
 	fclose(f);
 	close(fd);
-	//unlink(filename);
-	return 0;
+	unlink(filename);
+	return ret;
 }
 
 static void auth_op_noop(lc_message_t *msg)

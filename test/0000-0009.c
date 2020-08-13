@@ -32,7 +32,7 @@ void runtests(pid_t pid)
 	/* (1) build packet */
 	struct iovec repl = { .iov_base = pk, .iov_len = crypto_box_PUBLICKEYBYTES };
 	struct iovec user = { .iov_base = "username" };
-	struct iovec mail = { .iov_base = "email" };
+	struct iovec mail = { .iov_base = "noreply@librecast.net" };
 	struct iovec pass = { .iov_base = "password" };
 	struct iovec serv = { .iov_base = "service" };
 	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };

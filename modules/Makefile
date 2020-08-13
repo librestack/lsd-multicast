@@ -10,7 +10,7 @@ LIBS := -lsodium
 all: $(MODULES)
 
 %.so: %.o $(COMMON_OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -lcurl
 
 %.o: %.h
 

@@ -17,10 +17,10 @@ keymgr: keymgr.o
 
 keymgr.o:
 
-mail: LDFLAGS += -lcurl
-mail: mail.o
+#mail: LDFLAGS += -lcurl
+#mail: mail.o
 
-mail.o:
+#mail.o:
 
 config.o: config.h lex.h
 
