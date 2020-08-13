@@ -86,7 +86,6 @@ void runtests(pid_t pid)
 	/* (4) send packet */
 	lc_msg_init_data(&msg, pkt.iov_base, pkt.iov_len, NULL, NULL);
 	test_log("packed %zu bytes ready to send", data.iov_len);
-	test_sleep(0, 999999); /* give server a chance to be ready */
 	lc_msg_send(chan, &msg);
 	free(pkt.iov_base);
 	free(data.iov_base);
@@ -101,7 +100,6 @@ void runtests(pid_t pid)
 	/* TODO: (6) decrypt reply */
 	/* TODO: (7) handle response/error */
 
-	test_sleep(0, 99999999); /* give server a chance to be ready */
 	lc_ctx_free(lctx);
 	kill(pid, SIGINT); /* stop server */
 }

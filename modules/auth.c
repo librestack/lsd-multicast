@@ -88,9 +88,6 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	/* TODO: (3) create user record in db */
 	char pwhash[crypto_pwhash_STRBYTES];
-	unsigned char salt[crypto_pwhash_SALTBYTES];
-	unsigned char key[crypto_box_SEEDBYTES];
-	randombytes_buf(salt, sizeof salt);
 
 	/* create userid */
 	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
@@ -100,15 +97,14 @@ static void auth_op_user_add(lc_message_t *msg)
 	DEBUG("userid created: %s", userid);
 
 	/* hash password */
-	if (crypto_pwhash(key, sizeof key, iovs[3].iov_base, iovs[3].iov_len, salt,
+	if (crypto_pwhash_str(pwhash, iovs[3].iov_base, iovs[3].iov_len,
 			crypto_pwhash_OPSLIMIT_INTERACTIVE,
-			crypto_pwhash_MEMLIMIT_INTERACTIVE,
-			crypto_pwhash_ALG_DEFAULT) != 0)
+			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
 	{
 		ERROR("crypto_pwhash() error");
 	}
 	/* TODO: store userid */
-	/* TODO: store salt + password */
+	/* TODO: store password */
 	/* TODO: store email */
 	/* TODO: store token + expiry */
 	/* TODO: any indexes needed */
@@ -141,8 +137,8 @@ static void auth_op_user_add(lc_message_t *msg)
 	//lc_msg_init(&response); /* TODO: build response packet */
 	/* TODO: just an opcode + flag really */
 	lc_msg_init_size(&response, 2);
-	((uint8_t *)response.data)[0] = AUTH_OP_NOOP;
-	((uint8_t *)response.data)[1] = 7;
+	((uint8_t *)response.data)[0] = AUTH_OP_NOOP; /* TODO: response opcode */
+	((uint8_t *)response.data)[1] = 7; /* TODO: define response codes */
 	int opt = 1; /* set loopback in case we're on the same host as the sender */
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
