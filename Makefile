@@ -24,7 +24,7 @@ clean realclean:
 sparse: clean
 	CC=cgcc $(MAKE) src
 
-check test sanitize:
+check test sanitize: src
 	cd test && $(MAKE) $@
 
 %.test %.check: modules
