@@ -48,7 +48,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	unsigned char *nonce = payload[1].iov_base;
 
 	/* convert private key from hex 2 bin */
-	sodium_hex2bin(&privatekey,
+	sodium_hex2bin(privatekey,
 			crypto_box_SECRETKEYBYTES,
 			config.handlers->key_private,
 			crypto_box_SECRETKEYBYTES * 2,
@@ -78,17 +78,32 @@ static void auth_op_user_add(lc_message_t *msg)
 		DEBUG("[%i] %.*s", i, (int)iovs[i].iov_len, (char *)iovs[i].iov_base);
 	}
 
-	/* TODO: (2) create token */
+	/* (2) create token */
 	unsigned char token[crypto_box_PUBLICKEYBYTES];
 	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
 	char hextoken[hexlen];
 	randombytes_buf(token, sizeof token);
 	sodium_bin2hex(hextoken, hexlen, token, crypto_box_PUBLICKEYBYTES);
+	DEBUG("token created: %s", hextoken);
 
 	/* TODO: (3) create user record in db */
-	/* TODO: (4) email token */
-	/* TODO: (5) reply to reply address */
+	/* create username */
+	/* hash password */
 
+	/* TODO: (4) email token */
+
+	/* TODO: (5) reply to reply address */
+	lc_ctx_t *lctx;
+	lc_socket_t *sock;
+	lc_channel_t *chan;
+	lc_message_t response;
+	lctx = lc_ctx_new();
+	sock = lc_socket_new(lctx);
+	chan = lc_channel_nnew(lctx, senderkey, crypto_box_PUBLICKEYBYTES);
+	lc_channel_bind(sock, chan);
+	lc_msg_init(&response); /* TODO: build response packet */
+	lc_msg_send(chan, &response);
+	lc_ctx_free(lctx);
 };
 
 static void auth_op_user_delete(lc_message_t *msg)
