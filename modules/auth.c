@@ -37,6 +37,11 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	/* (1) decrypt packet */
 	DEBUG("auth module decrypting contents");
+	if (sodium_init() == -1) {
+		ERROR("error initalizing libsodium");
+		return;
+	}
+
 	unsigned char data[pkt.iov_len - crypto_box_MACBYTES];
 	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
 	unsigned char *senderkey = payload[0].iov_base;
