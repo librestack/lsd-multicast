@@ -124,7 +124,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	//	  "Welcome to Librecast Live - Confirm Your Email Address",
 	//	  body);
 
-	/* TODO: (5) reply to reply address */
+	/* (5) reply to reply address */
 	DEBUG("response to requestor");
 	lc_ctx_t *lctx;
 	lc_socket_t *sock;
@@ -134,11 +134,9 @@ static void auth_op_user_add(lc_message_t *msg)
 	sock = lc_socket_new(lctx);
 	chan = lc_channel_nnew(lctx, senderkey, crypto_box_PUBLICKEYBYTES);
 	lc_channel_bind(sock, chan);
-	//lc_msg_init(&response); /* TODO: build response packet */
-	/* TODO: just an opcode + flag really */
-	lc_msg_init_size(&response, 2);
-	((uint8_t *)response.data)[0] = AUTH_OP_NOOP; /* TODO: response opcode */
-	((uint8_t *)response.data)[1] = 7; /* TODO: define response codes */
+	lc_msg_init_size(&response, 2); /* just an opcode + flag really */
+	((uint8_t *)response.data)[0] = AUTH_OP_NOOP;	/* TODO: response opcode */
+	((uint8_t *)response.data)[1] = 7;		/* TODO: define response codes */
 	int opt = 1; /* set loopback in case we're on the same host as the sender */
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
