@@ -14,6 +14,8 @@ struct handler_s {
 	handler_t *	next;
 	char *		channel;
 	char *		channelhash;
+	char *		dbname;
+	char *		dbpath;
 	char *		key_private;
 	char *		key_public;
 	char *		module;

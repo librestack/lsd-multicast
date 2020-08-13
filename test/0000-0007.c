@@ -13,6 +13,8 @@ int main()
 	test_assert(h && h->port == 4242, "handler (1) port set");
 	test_expect("echo", h->channel);
 	test_expect("SHA3", h->channelhash);
+	test_expect("some database", h->dbname);
+	test_expect("/path/to/database", h->dbpath);
 	test_expect("echo", h->module);
 	test_expect("asdfkashefyasdfljasdkufghaskdufhasddgflkjashdfk", h->key_public);
 	test_expect("isdhiwygasdikfhasfgdhlkjasdhahskjlhajshdfkajsf", h->key_private);

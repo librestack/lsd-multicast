@@ -31,6 +31,8 @@ handler_t handler = {};
 %token <sval> COLON
 %token <sval> COMMENT
 %token <ival> DAEMON
+%token <sval> DBNAME
+%token <sval> DBPATH
 %token <sval> DBLQUOTE
 %token <sval> DBLQUOTEDSTRING
 %token <ival> DEBUGMODE
@@ -144,6 +146,18 @@ handler:
 		fprintf(stderr, "handler channel = %s\n", $2);
 		handler.channelhash = NULL;
 		handler.channel = $2;
+	}
+	|
+	DBNAME DBLQUOTEDSTRING
+	{
+		fprintf(stderr, "handler dbname = '%s'\n", $2);
+		handler.dbname = $2;
+	}
+	|
+	DBPATH FILENAME
+	{
+		fprintf(stderr, "handler dbpath = '%s'\n", $2);
+		handler.dbpath = $2;
 	}
 	|
 	KEYPRIV WORD

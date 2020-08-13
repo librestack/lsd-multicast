@@ -15,6 +15,8 @@ int lineno = 1;
 cert				return CERT;
 channel				return CHANNEL;
 daemon				return DAEMON;
+dbname				return DBNAME;
+dbpath				return DBPATH;
 debug				return DEBUGMODE;
 false|true			yylval.ival = strcmp(yytext, "false"); return BOOL;
 handler				return HANDLER;

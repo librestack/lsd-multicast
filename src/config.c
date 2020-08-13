@@ -26,6 +26,8 @@ static void config_free_handlers(void) {
 	while (p) {
 		config_free_ptr(p->channel);
 		config_free_ptr(p->channelhash);
+		config_free_ptr(p->dbname);
+		config_free_ptr(p->dbpath);
 		config_free_ptr(p->key_private);
 		config_free_ptr(p->key_public);
 		config_free_ptr(p->module);
