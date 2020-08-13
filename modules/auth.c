@@ -11,6 +11,58 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+static int auth_mail_token(char *subject, char *to, char *token)
+{
+	char filename[] = "/tmp/lsd-auth-mail-XXXXXX";
+	FILE *f;
+	time_t t;
+	int fd;
+
+	/* TODO: create temporary file */
+	if ((fd = mkstemp(filename)) == -1) {
+		ERROR("error creating tempfile: %s", strerror(errno));
+		return -1;
+	}
+	if ((f = fdopen(fd, "w")) == NULL) {
+		close(fd);
+		return -1;
+	}
+
+	/* date */
+	t = time(NULL);
+	char ts[40];
+	char welcometext[] = "You (or someone on your behalf) has signed up to Librecast Live using this email address.  To verify your address, please click the following link\r\n";
+	strftime(ts, sizeof ts, "%a, %d %b %Y %T %z", localtime(&t));
+	fprintf(f, "Date: %s\r\n", ts);
+	fprintf(f, "From: Librecast Live <noreply@librecast.net>\r\n"); /* TODO: from config */
+	fprintf(f, "To: <%s>\r\n", to);
+	fprintf(f, "Subject: %s\r\n", subject);
+	fprintf(f, "\r\n"); /* blank line */
+	fprintf(f, "%s", welcometext); /* TODO: from config */
+	fprintf(f, "    https://live.librecast.net/verifyemail/%s\r\n", token);
+	fprintf(f, "We look forward to you joining us soon!\r\n");
+
+
+
+	//char *body;
+	//size_t bodylen = snprintf(NULL,
+	//    "Click to confirm your email address:\r\n    https://live.librecast.net/verifyemail/%s",
+	//    hextoken);
+	//mail_send(config.mailfrom, iovs[2], config.subject_newuser, body);
+	//mail_send("Librecast Live <noreply@librecast.net>",
+	//	  iovs[2],
+	//	  "Welcome to Librecast Live - Confirm Your Email Address",
+	//	  body);
+
+
+	fclose(f);
+	close(fd);
+	//unlink(filename);
+	return 0;
+}
 
 static void auth_op_noop(lc_message_t *msg)
 {
@@ -78,6 +130,8 @@ static void auth_op_user_add(lc_message_t *msg)
 		DEBUG("[%i] %.*s", i, (int)iovs[i].iov_len, (char *)iovs[i].iov_base);
 	}
 
+	/* TODO: validate things like email address */
+
 	/* (2) create token */
 	unsigned char token[crypto_box_PUBLICKEYBYTES];
 	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
@@ -118,16 +172,15 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	/* TODO: (4) email token */
 	DEBUG("emailing token");
-
-	//char *body;
-	//size_t bodylen = snprintf(NULL,
-	//    "Click to confirm your email address:\r\n    https://live.librecast.net/verifyemail/%s",
-	//    hextoken);
-	//mail_send(config.mailfrom, iovs[2], config.subject_newuser, body);
-	//mail_send("Librecast Live <noreply@librecast.net>",
-	//	  iovs[2],
-	//	  "Welcome to Librecast Live - Confirm Your Email Address",
-	//	  body);
+	char subject[] = "Librecast Live - Confirm Your Email Address";
+	char *to = strndup(iovs[2].iov_base, iovs[2].iov_len);
+	if (auth_mail_token(subject, to, hextoken) == -1) {
+		ERROR("error in auth_mail_token()");
+	}
+	else {
+		DEBUG("email sent");
+	}
+	free(to);
 
 	/* (5) reply to reply address */
 	DEBUG("response to requestor");
