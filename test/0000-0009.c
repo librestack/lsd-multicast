@@ -24,6 +24,7 @@ void runtests(pid_t pid)
 	/* generate keypair & use as reply address */
 	unsigned char pk[crypto_box_PUBLICKEYBYTES];
 	unsigned char sk[crypto_box_SECRETKEYBYTES];
+	test_assert(sodium_init() != -1, "sodium_init()");
 	test_assert(crypto_box_keypair(pk, sk) != -1, "crypto_box_keypair()");
 
 	/* (1) build packet */
@@ -46,25 +47,19 @@ void runtests(pid_t pid)
 
 	/* (2) encrypt packet */
 	unsigned char authpubkey[crypto_box_PUBLICKEYBYTES];
+	unsigned char nonce[crypto_box_NONCEBYTES];
+	const size_t cipherlen = crypto_box_MACBYTES + data.iov_len;
+	unsigned char ciphertext[cipherlen];
 
 	test_assert(h != NULL, "handlers");
-	test_assert(h->key_public != NULL, "handler public key");
-	test_assert(h->key_private != NULL, "handler privkey");
-	test_assert(h->channel != NULL, "channel");
-	test_assert(!strcmp("d20d09899e69d4adf5069099cad784499802b0235c0aa7398b9d0622bc18a676",
-				config.handlers->key_public), "key_public");
 
 	sodium_hex2bin(authpubkey,
 			crypto_box_PUBLICKEYBYTES,
-			config.handlers->key_public,
+			config.handlers->key_public, /* FIXME */
 			crypto_box_PUBLICKEYBYTES * 2,
 			NULL,
 			0,
 			NULL);
-	const size_t cipherlen = crypto_box_MACBYTES + data.iov_len;
-	test_assert(sodium_init() != -1, "sodium_init()");
-	unsigned char nonce[crypto_box_NONCEBYTES];
-	unsigned char ciphertext[cipherlen];
 	randombytes_buf(nonce, sizeof nonce);
 	test_assert(!crypto_box_easy(ciphertext, (unsigned char *)data.iov_base, data.iov_len, nonce, authpubkey, sk), "crypto_box_easy()");
 

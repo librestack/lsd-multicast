@@ -23,6 +23,7 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	assert(config.handlers != NULL);
 
+	/* TODO: move this whole mess to handle_msg() */
 
 	/* (0) unpack outer packet */
 	DEBUG("auth module unpacking outer packet");
@@ -37,8 +38,11 @@ static void auth_op_user_add(lc_message_t *msg)
 	/* (1) decrypt packet */
 	DEBUG("auth module decrypting contents");
 	unsigned char data[pkt.iov_len - crypto_box_MACBYTES];
-	//struct iovec iovc[5] = {};
 	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
+	unsigned char *senderkey = payload[0].iov_base;
+	unsigned char *nonce = payload[1].iov_base;
+	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
+	char hex[hexlen];
 
 	/* convert private key from hex 2 bin */
 	sodium_hex2bin(&privatekey,
@@ -49,17 +53,6 @@ static void auth_op_user_add(lc_message_t *msg)
 			0,
 			NULL);
 
-	unsigned char *senderkey = payload[0].iov_base;
-	unsigned char *nonce;
-	nonce = payload[1].iov_base;
-
-	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
-	char hex[hexlen];
-	sodium_bin2hex(hex, hexlen, privatekey, crypto_box_SECRETKEYBYTES);
-	DEBUG("privatekey: %s", hex);
-	sodium_bin2hex(hex, hexlen, senderkey, crypto_box_PUBLICKEYBYTES);
-	DEBUG("senderkey: %s", hex);
-
 	if (crypto_box_open_easy(data, payload[2].iov_base, payload[2].iov_len,
 				nonce, senderkey, privatekey) != 0)
 	{
@@ -69,11 +62,16 @@ static void auth_op_user_add(lc_message_t *msg)
 	DEBUG("auth module decryption successful");
 
 	/* (1b) unpack inner data fields */
+	DEBUG("auth module unpacking fields");
 	const int iov_count = 5;
 	struct iovec iovs[iov_count];
-	DEBUG("auth module unpacking fields");
 	struct iovec clearpkt = { .iov_base = data, .iov_len = pkt.iov_len - crypto_box_MACBYTES };
-	wire_unpack(&clearpkt, iovs, iov_count, &op, &flags);
+	memset(data, 0, sizeof(data));
+	wire_unpack(&clearpkt,
+			iovs,
+			iov_count,
+			&op,
+			&flags);
 	for (int i = 1; i < iov_count; i++) {
 		DEBUG("[%i] %.*s", i, (int)iovs[i].iov_len, (char *)iovs[i].iov_base);
 	}
