@@ -18,6 +18,25 @@
 /* TODO: from config */
 #define FROM "noreply@librecast.net"
 
+static void hash_field(unsigned char *hash, size_t hashlen,
+		const char *key, size_t keylen,
+		const char *fld, size_t fldlen)
+{
+	crypto_generichash_state state;
+	crypto_generichash_init(&state, NULL, 0, hashlen);
+	crypto_generichash_update(&state, key, keylen);
+	crypto_generichash_update(&state, fld, fldlen);
+	crypto_generichash_final(&state, hash, hashlen);
+}
+
+static void auth_field_set(lc_ctx_t *lctx, const char *db, char *key, size_t keylen,
+		const char *field, void *data, size_t datalen)
+{
+	unsigned char hash[crypto_generichash_BYTES];
+	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
+	lc_db_set(lctx, db, hash, sizeof hash, data, datalen);
+}
+
 static int auth_mail_token(char *subject, char *to, char *token)
 {
 	char filename[] = "/tmp/lsd-auth-mail-XXXXXX";
@@ -49,7 +68,6 @@ static int auth_mail_token(char *subject, char *to, char *token)
 	fprintf(f, "We look forward to you joining us soon!\r\n");
 	fflush(f); rewind(f);
 
-	/* send email */
 	CURL *curl = NULL;
 	CURLcode res = CURLE_OK;
 	struct curl_slist *recipients = NULL;
@@ -89,6 +107,11 @@ static void auth_op_noop(lc_message_t *msg)
 static void auth_op_user_add(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
+
+	lc_ctx_t *lctx;
+	lc_socket_t *sock;
+	lc_channel_t *chan;
+	lc_message_t response;
 
 	assert(config.handlers != NULL);
 
@@ -179,6 +202,19 @@ static void auth_op_user_add(lc_message_t *msg)
 	{
 		ERROR("crypto_pwhash() error");
 	}
+
+	char dbpath[] = "lsd-auth-db.tmp.XXXXXX"; /* FIXME: from config */
+	char db[] = "hashmap"; /* FIXME: from config */
+	lctx = lc_ctx_new();
+	lc_db_open(lctx, mkdtemp(dbpath));
+	auth_field_set(lctx, db, userid, hexlen, "pkey", iovs[0].iov_base, iovs[0].iov_len);
+	auth_field_set(lctx, db, userid, hexlen, "mail", iovs[2].iov_base, iovs[2].iov_len);
+	auth_field_set(lctx, db, iovs[2].iov_base, iovs[2].iov_len, "mail", userid, hexlen);
+	auth_field_set(lctx, db, userid, hexlen, "pass", iovs[3].iov_base, iovs[3].iov_len);
+	auth_field_set(lctx, db, userid, hexlen, "serv", iovs[4].iov_base, iovs[4].iov_len);
+	auth_field_set(lctx, db, userid, hexlen, "token", hextoken, hexlen);
+	auth_field_set(lctx, db, hextoken, hexlen, "token", userid, hexlen);
+
 	/* TODO: store userid */
 	/* TODO: store password */
 	/* TODO: store email */
@@ -187,25 +223,22 @@ static void auth_op_user_add(lc_message_t *msg)
 	/* TODO: logfile entry */
 	DEBUG("user created");
 
-	/* TODO: (4) email token */
+	/* (4) email token */
 	DEBUG("emailing token");
 	char subject[] = "Librecast Live - Confirm Your Email Address";
 	char *to = strndup(iovs[2].iov_base, iovs[2].iov_len);
+#if 0
 	if (auth_mail_token(subject, to, hextoken) == -1) {
 		ERROR("error in auth_mail_token()");
 	}
 	else {
 		DEBUG("email sent");
 	}
+#endif
 	free(to);
 
 	/* (5) reply to reply address */
 	DEBUG("response to requestor");
-	lc_ctx_t *lctx;
-	lc_socket_t *sock;
-	lc_channel_t *chan;
-	lc_message_t response;
-	lctx = lc_ctx_new();
 	sock = lc_socket_new(lctx);
 	chan = lc_channel_nnew(lctx, senderkey, crypto_box_PUBLICKEYBYTES);
 	lc_channel_bind(sock, chan);
