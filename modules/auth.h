@@ -5,6 +5,7 @@
 #define _LSDM_AUTH_H 1
 
 #include <errno.h>
+#include <librecast/types.h>
 #include <limits.h>
 #include <stdint.h>
 #include <sys/socket.h>
@@ -61,5 +62,11 @@ enum {
 	AUTH_PASS,
 	AUTH_SERV
 };
+
+void hash_field(unsigned char *hash, size_t hashlen,
+		const char *key, size_t keylen,
+		const char *fld, size_t fldlen);
+void auth_field_set(lc_ctx_t *lctx, char *key, size_t keylen,
+		const char *field, void *data, size_t datalen);
 
 #endif /* _LSDM_AUTH_H */

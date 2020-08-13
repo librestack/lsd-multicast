@@ -9,8 +9,11 @@ LIBS := -lsodium
 
 all: $(MODULES)
 
-%.so: %.o $(COMMON_OBJECTS)
+auth.so: auth.o $(COMMON_OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) -lcurl
+
+echo.so: echo.o $(COMMON_OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 %.o: %.h
 

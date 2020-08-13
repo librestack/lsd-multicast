@@ -19,18 +19,18 @@
 /* TODO: from config */
 #define FROM "noreply@librecast.net"
 
-static void hash_field(unsigned char *hash, size_t hashlen,
+void hash_field(unsigned char *hash, size_t hashlen,
 		const char *key, size_t keylen,
 		const char *fld, size_t fldlen)
 {
 	crypto_generichash_state state;
 	crypto_generichash_init(&state, NULL, 0, hashlen);
-	crypto_generichash_update(&state, key, keylen);
-	crypto_generichash_update(&state, fld, fldlen);
+	crypto_generichash_update(&state, (unsigned char *)key, keylen);
+	crypto_generichash_update(&state, (unsigned char *)fld, fldlen);
 	crypto_generichash_final(&state, hash, hashlen);
 }
 
-static void auth_field_set(lc_ctx_t *lctx, char *key, size_t keylen,
+void auth_field_set(lc_ctx_t *lctx, char *key, size_t keylen,
 		const char *field, void *data, size_t datalen)
 {
 	unsigned char hash[crypto_generichash_BYTES];
@@ -178,6 +178,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	unsigned char token[crypto_box_PUBLICKEYBYTES];
 	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
 	char hextoken[hexlen];
+	uint64_t tokexp;
 	if (config.testmode) {
 		unsigned char seed[randombytes_SEEDBYTES];
 		memcpy(seed, senderkey, randombytes_SEEDBYTES);
@@ -185,6 +186,8 @@ static void auth_op_user_add(lc_message_t *msg)
 	}
 	else randombytes_buf(token, sizeof token);
 	sodium_bin2hex(hextoken, hexlen, token, sizeof token);
+	tokexp = htobe64((uint64_t)time(NULL) + 60 * 15); /* expires in 15 minutes */
+
 	DEBUG("token created: %s", hextoken);
 
 	/* TODO: (3) create user record in db */
@@ -212,15 +215,13 @@ static void auth_op_user_add(lc_message_t *msg)
 	lc_db_open(lctx, h->dbpath);
 	auth_field_set(lctx, userid, hexlen, "pkey", iovs[0].iov_base, iovs[0].iov_len);
 	auth_field_set(lctx, userid, hexlen, "mail", iovs[2].iov_base, iovs[2].iov_len);
-	auth_field_set(lctx, iovs[2].iov_base, iovs[2].iov_len, "mail", userid, hexlen);
+	auth_field_set(lctx, iovs[2].iov_base, iovs[2].iov_len, "user", userid, hexlen);
 	auth_field_set(lctx, userid, hexlen, "pass", iovs[3].iov_base, iovs[3].iov_len);
 	auth_field_set(lctx, userid, hexlen, "serv", iovs[4].iov_base, iovs[4].iov_len);
 	auth_field_set(lctx, userid, hexlen, "token", hextoken, hexlen);
-	auth_field_set(lctx, hextoken, hexlen, "token", userid, hexlen);
+	auth_field_set(lctx, hextoken, hexlen, "user", userid, hexlen);
+	auth_field_set(lctx, hextoken, hexlen, "expires", &tokexp, sizeof tokexp);
 
-	/* TODO: store userid */
-	/* TODO: store password */
-	/* TODO: store email */
 	/* TODO: store token + expiry */
 	/* TODO: any indexes needed */
 	/* TODO: logfile entry */
