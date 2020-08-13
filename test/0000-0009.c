@@ -20,6 +20,8 @@ void runtests(pid_t pid)
 	lc_message_t msg;
 	int opt = 1;
 	struct iovec data;
+	handler_t *h = config.handlers;
+	test_assert(h != NULL, "handlers");
 
 	/* generate keypair & use as reply address */
 	unsigned char pk[crypto_box_PUBLICKEYBYTES];
@@ -38,7 +40,6 @@ void runtests(pid_t pid)
 	uint8_t op = AUTH_OP_USER_ADD;
 	uint8_t flags = 9;
 	ssize_t len;
-	handler_t *h = config.handlers;
 	for (int i = 1; i < iov_count; i++) {
 		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
 	}
@@ -46,16 +47,16 @@ void runtests(pid_t pid)
 	test_assert(len > 0, "wire_pack() returned %i", len);
 
 	/* (2) encrypt packet */
+	//char *authpubhex = h->key_public;
+	char *authpubhex = "d20d09899e69d4adf5069099cad784499802b0235c0aa7398b9d0622bc18a676";
 	unsigned char authpubkey[crypto_box_PUBLICKEYBYTES];
 	unsigned char nonce[crypto_box_NONCEBYTES];
 	const size_t cipherlen = crypto_box_MACBYTES + data.iov_len;
 	unsigned char ciphertext[cipherlen];
 
-	test_assert(h != NULL, "handlers");
-
 	sodium_hex2bin(authpubkey,
 			crypto_box_PUBLICKEYBYTES,
-			h->key_public,
+			authpubhex,
 			crypto_box_PUBLICKEYBYTES * 2,
 			NULL,
 			0,
@@ -76,7 +77,7 @@ void runtests(pid_t pid)
 	sock = lc_socket_new(lctx);
 	sock_repl = lc_socket_new(lctx);
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
-	chan = lc_channel_new(lctx, h->channel);
+	chan = lc_channel_new(lctx, authpubhex);
 	chan_repl = lc_channel_nnew(lctx, pk, crypto_box_PUBLICKEYBYTES);
 	lc_channel_bind(sock, chan);
 	lc_channel_bind(sock_repl, chan_repl);

@@ -41,8 +41,6 @@ static void auth_op_user_add(lc_message_t *msg)
 	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
 	unsigned char *senderkey = payload[0].iov_base;
 	unsigned char *nonce = payload[1].iov_base;
-	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
-	char hex[hexlen];
 
 	/* convert private key from hex 2 bin */
 	sodium_hex2bin(&privatekey,
@@ -66,7 +64,6 @@ static void auth_op_user_add(lc_message_t *msg)
 	const int iov_count = 5;
 	struct iovec iovs[iov_count];
 	struct iovec clearpkt = { .iov_base = data, .iov_len = pkt.iov_len - crypto_box_MACBYTES };
-	memset(data, 0, sizeof(data));
 	wire_unpack(&clearpkt,
 			iovs,
 			iov_count,
@@ -77,6 +74,12 @@ static void auth_op_user_add(lc_message_t *msg)
 	}
 
 	/* TODO: (2) create token */
+	unsigned char token[crypto_box_PUBLICKEYBYTES];
+	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
+	char hextoken[hexlen];
+	randombytes_buf(token, sizeof token);
+	sodium_bin2hex(hextoken, hexlen, token, crypto_box_PUBLICKEYBYTES);
+
 	/* TODO: (3) create user record in db */
 	/* TODO: (4) email token */
 	/* TODO: (5) reply to reply address */
