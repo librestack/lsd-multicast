@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -29,12 +30,12 @@ static void hash_field(unsigned char *hash, size_t hashlen,
 	crypto_generichash_final(&state, hash, hashlen);
 }
 
-static void auth_field_set(lc_ctx_t *lctx, const char *db, char *key, size_t keylen,
+static void auth_field_set(lc_ctx_t *lctx, char *key, size_t keylen,
 		const char *field, void *data, size_t datalen)
 {
 	unsigned char hash[crypto_generichash_BYTES];
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
-	lc_db_set(lctx, db, hash, sizeof hash, data, datalen);
+	lc_db_set(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
 }
 
 static int auth_mail_token(char *subject, char *to, char *token)
@@ -112,8 +113,9 @@ static void auth_op_user_add(lc_message_t *msg)
 	lc_socket_t *sock;
 	lc_channel_t *chan;
 	lc_message_t response;
+	handler_t *h = config.handlers;
 
-	assert(config.handlers != NULL);
+	assert(h != NULL);
 
 	/* TODO: move this whole mess to handle_msg() */
 
@@ -142,7 +144,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	/* convert private key from hex 2 bin */
 	sodium_hex2bin(privatekey,
 			crypto_box_SECRETKEYBYTES,
-			config.handlers->key_private,
+			h->key_private,
 			crypto_box_SECRETKEYBYTES * 2,
 			NULL,
 			0,
@@ -203,17 +205,18 @@ static void auth_op_user_add(lc_message_t *msg)
 		ERROR("crypto_pwhash() error");
 	}
 
-	char dbpath[] = "lsd-auth-db.tmp.XXXXXX"; /* FIXME: from config */
-	char db[] = "hashmap"; /* FIXME: from config */
 	lctx = lc_ctx_new();
-	lc_db_open(lctx, mkdtemp(dbpath));
-	auth_field_set(lctx, db, userid, hexlen, "pkey", iovs[0].iov_base, iovs[0].iov_len);
-	auth_field_set(lctx, db, userid, hexlen, "mail", iovs[2].iov_base, iovs[2].iov_len);
-	auth_field_set(lctx, db, iovs[2].iov_base, iovs[2].iov_len, "mail", userid, hexlen);
-	auth_field_set(lctx, db, userid, hexlen, "pass", iovs[3].iov_base, iovs[3].iov_len);
-	auth_field_set(lctx, db, userid, hexlen, "serv", iovs[4].iov_base, iovs[4].iov_len);
-	auth_field_set(lctx, db, userid, hexlen, "token", hextoken, hexlen);
-	auth_field_set(lctx, db, hextoken, hexlen, "token", userid, hexlen);
+	if (mkdir(h->dbpath, S_IRWXU) == -1 && errno != EEXIST) {
+		ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
+	}
+	lc_db_open(lctx, h->dbpath);
+	auth_field_set(lctx, userid, hexlen, "pkey", iovs[0].iov_base, iovs[0].iov_len);
+	auth_field_set(lctx, userid, hexlen, "mail", iovs[2].iov_base, iovs[2].iov_len);
+	auth_field_set(lctx, iovs[2].iov_base, iovs[2].iov_len, "mail", userid, hexlen);
+	auth_field_set(lctx, userid, hexlen, "pass", iovs[3].iov_base, iovs[3].iov_len);
+	auth_field_set(lctx, userid, hexlen, "serv", iovs[4].iov_base, iovs[4].iov_len);
+	auth_field_set(lctx, userid, hexlen, "token", hextoken, hexlen);
+	auth_field_set(lctx, hextoken, hexlen, "token", userid, hexlen);
 
 	/* TODO: store userid */
 	/* TODO: store password */
@@ -225,17 +228,17 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	/* (4) email token */
 	DEBUG("emailing token");
+#if 0
 	char subject[] = "Librecast Live - Confirm Your Email Address";
 	char *to = strndup(iovs[2].iov_base, iovs[2].iov_len);
-#if 0
 	if (auth_mail_token(subject, to, hextoken) == -1) {
 		ERROR("error in auth_mail_token()");
 	}
 	else {
 		DEBUG("email sent");
 	}
-#endif
 	free(to);
+#endif
 
 	/* (5) reply to reply address */
 	DEBUG("response to requestor");
