@@ -49,6 +49,7 @@ handler_t handler = {};
 %token <sval> SCOPE
 %token <sval> SECTION
 %token <sval> SLASH
+%token <sval> TESTMODE
 %token <sval> WORD
 %token <sval> V6ADDR
 
@@ -87,6 +88,14 @@ global:
 		if ($2) {
 			config.debug = 1;
 			fprintf(stderr, "debug mode enabled\n");
+		}
+	}
+	|
+	TESTMODE BOOL
+	{
+		if ($2) {
+			config.testmode = 1;
+			fprintf(stderr, "test mode enabled\n");
 		}
 	}
 	|

@@ -37,6 +37,7 @@ struct config_s {
 	int	debug;
 	int	loglevel;
 	int	modules;
+	int	testmode;
 	char *	configfile;
 	char *	key;
 	char *	cert;

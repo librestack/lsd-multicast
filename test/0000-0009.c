@@ -100,6 +100,17 @@ void runtests(pid_t pid)
 	/* TODO: (6) decrypt reply */
 	/* TODO: (7) handle response/error */
 
+	/*FIXME: temp - check token */
+#if 0
+	unsigned char token[crypto_box_PUBLICKEYBYTES];
+	unsigned char seed[randombytes_SEEDBYTES];
+	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
+	char hextoken[hexlen];
+	memcpy(seed, pk, randombytes_SEEDBYTES);
+	randombytes_buf_deterministic(token, sizeof token, seed);
+	sodium_bin2hex(hextoken, hexlen, token, sizeof token);
+	test_log("test runner token: %s", hextoken);
+#endif
 	lc_ctx_free(lctx);
 	kill(pid, SIGINT); /* stop server */
 }

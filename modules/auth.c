@@ -82,7 +82,12 @@ static void auth_op_user_add(lc_message_t *msg)
 	unsigned char token[crypto_box_PUBLICKEYBYTES];
 	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
 	char hextoken[hexlen];
-	randombytes_buf(token, sizeof token);
+	if (config.testmode) {
+		unsigned char seed[randombytes_SEEDBYTES];
+		memcpy(seed, senderkey, randombytes_SEEDBYTES);
+		randombytes_buf_deterministic(token, sizeof token, seed);
+	}
+	else randombytes_buf(token, sizeof token);
 	sodium_bin2hex(hextoken, hexlen, token, sizeof token);
 	DEBUG("token created: %s", hextoken);
 
