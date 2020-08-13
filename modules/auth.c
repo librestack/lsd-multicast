@@ -83,16 +83,53 @@ static void auth_op_user_add(lc_message_t *msg)
 	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
 	char hextoken[hexlen];
 	randombytes_buf(token, sizeof token);
-	sodium_bin2hex(hextoken, hexlen, token, crypto_box_PUBLICKEYBYTES);
+	sodium_bin2hex(hextoken, hexlen, token, sizeof token);
 	DEBUG("token created: %s", hextoken);
 
 	/* TODO: (3) create user record in db */
-	/* create username */
+	char pwhash[crypto_pwhash_STRBYTES];
+	unsigned char salt[crypto_pwhash_SALTBYTES];
+	unsigned char key[crypto_box_SEEDBYTES];
+	randombytes_buf(salt, sizeof salt);
+
+	/* create userid */
+	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
+	char userid[hexlen];
+	randombytes_buf(userid_bytes, sizeof userid_bytes);
+	sodium_bin2hex(userid, hexlen, userid_bytes, sizeof userid_bytes);
+	DEBUG("userid created: %s", userid);
+
 	/* hash password */
+	if (crypto_pwhash(key, sizeof key, iovs[3].iov_base, iovs[3].iov_len, salt,
+			crypto_pwhash_OPSLIMIT_INTERACTIVE,
+			crypto_pwhash_MEMLIMIT_INTERACTIVE,
+			crypto_pwhash_ALG_DEFAULT) != 0)
+	{
+		ERROR("crypto_pwhash() error");
+	}
+	/* TODO: store userid */
+	/* TODO: store salt + password */
+	/* TODO: store email */
+	/* TODO: store token + expiry */
+	/* TODO: any indexes needed */
+	/* TODO: logfile entry */
+	DEBUG("user created");
 
 	/* TODO: (4) email token */
+	DEBUG("emailing token");
+
+	char *body;
+	size_t bodylen = snprintf(NULL,
+	    "Click to confirm your email address:\r\n    https://live.librecast.net/verifyemail/%s",
+	    hextoken);
+	//mail_send(config.mailfrom, iovs[2], config.subject_newuser, body);
+	mail_send("Librecast Live <noreply@librecast.net>",
+		  iovs[2],
+		  "Welcome to Librecast Live - Confirm Your Email Address",
+		  body);
 
 	/* TODO: (5) reply to reply address */
+	DEBUG("response to requestor");
 	lc_ctx_t *lctx;
 	lc_socket_t *sock;
 	lc_channel_t *chan;
@@ -102,6 +139,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	chan = lc_channel_nnew(lctx, senderkey, crypto_box_PUBLICKEYBYTES);
 	lc_channel_bind(sock, chan);
 	lc_msg_init(&response); /* TODO: build response packet */
+	/* TODO: just an opcode + flag really */
 	lc_msg_send(chan, &response);
 	lc_ctx_free(lctx);
 };

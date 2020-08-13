@@ -17,7 +17,7 @@ void runtests(pid_t pid)
 	lc_ctx_t *lctx;
 	lc_socket_t *sock, *sock_repl;
 	lc_channel_t *chan, *chan_repl;
-	lc_message_t msg;
+	lc_message_t msg, msg_repl;
 	int opt = 1;
 	struct iovec data;
 	handler_t *h = config.handlers;
@@ -91,13 +91,13 @@ void runtests(pid_t pid)
 	free(pkt.iov_base);
 	free(data.iov_base);
 
-	/* TODO: (5) await reply */
-	//lc_msg_recv(sock, &msg_repl);
-	//test_assert(msg_repl.len > 0, "message has nonzero length");
+	/* (5) await reply */
+	lc_msg_recv(sock, &msg_repl);
+	test_assert(msg_repl.len > 0, "message has nonzero length");
+	lc_msg_free(&msg_repl);
 
 	/* TODO: (6) decrypt reply */
 	/* TODO: (7) handle response/error */
-	/* TODO: (8) verify email sent? */
 
 	test_sleep(0, 99999999); /* give server a chance to be ready */
 	lc_ctx_free(lctx);
