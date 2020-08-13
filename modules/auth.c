@@ -118,15 +118,15 @@ static void auth_op_user_add(lc_message_t *msg)
 	/* TODO: (4) email token */
 	DEBUG("emailing token");
 
-	char *body;
-	size_t bodylen = snprintf(NULL,
-	    "Click to confirm your email address:\r\n    https://live.librecast.net/verifyemail/%s",
-	    hextoken);
+	//char *body;
+	//size_t bodylen = snprintf(NULL,
+	//    "Click to confirm your email address:\r\n    https://live.librecast.net/verifyemail/%s",
+	//    hextoken);
 	//mail_send(config.mailfrom, iovs[2], config.subject_newuser, body);
-	mail_send("Librecast Live <noreply@librecast.net>",
-		  iovs[2],
-		  "Welcome to Librecast Live - Confirm Your Email Address",
-		  body);
+	//mail_send("Librecast Live <noreply@librecast.net>",
+	//	  iovs[2],
+	//	  "Welcome to Librecast Live - Confirm Your Email Address",
+	//	  body);
 
 	/* TODO: (5) reply to reply address */
 	DEBUG("response to requestor");
@@ -138,8 +138,13 @@ static void auth_op_user_add(lc_message_t *msg)
 	sock = lc_socket_new(lctx);
 	chan = lc_channel_nnew(lctx, senderkey, crypto_box_PUBLICKEYBYTES);
 	lc_channel_bind(sock, chan);
-	lc_msg_init(&response); /* TODO: build response packet */
+	//lc_msg_init(&response); /* TODO: build response packet */
 	/* TODO: just an opcode + flag really */
+	lc_msg_init_size(&response, 2);
+	((uint8_t *)response.data)[0] = AUTH_OP_NOOP;
+	((uint8_t *)response.data)[1] = 7;
+	int opt = 1; /* set loopback in case we're on the same host as the sender */
+	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
 	lc_ctx_free(lctx);
 };
