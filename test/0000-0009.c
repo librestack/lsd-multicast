@@ -55,7 +55,7 @@ void runtests(pid_t pid)
 
 	sodium_hex2bin(authpubkey,
 			crypto_box_PUBLICKEYBYTES,
-			config.handlers->key_public, /* FIXME */
+			h->key_public,
 			crypto_box_PUBLICKEYBYTES * 2,
 			NULL,
 			0,
