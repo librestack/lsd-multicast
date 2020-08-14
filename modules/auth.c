@@ -222,8 +222,6 @@ static void auth_op_user_add(lc_message_t *msg)
 	auth_field_set(lctx, hextoken, hexlen, "user", userid, hexlen);
 	auth_field_set(lctx, hextoken, hexlen, "expires", &tokexp, sizeof tokexp);
 
-	/* TODO: store token + expiry */
-	/* TODO: any indexes needed */
 	/* TODO: logfile entry */
 	DEBUG("user created");
 
