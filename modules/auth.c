@@ -142,29 +142,31 @@ static int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 
 	/* unpack inner data fields */
 	DEBUG("auth module unpacking fields");
-	//const int iov_count = 5;
-	//struct iovec iovs[iov_count];
 	struct iovec clearpkt = { .iov_base = data, .iov_len = pkt.iov_len - crypto_box_MACBYTES };
+	payload->fieldcount = 5;
 	wire_unpack(&clearpkt,
 			payload->fields,
 			payload->fieldcount,
 			&payload->opcode,
 			&payload->flags);
+#if 0
 	for (int i = 1; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %.*s", i, (int)payload->fields[i].iov_len, (char *)payload->fields[i].iov_base);
 	}
+#endif
 	return 0;
 }
 
 int auth_create_user_token(auth_user_token_t *token, auth_payload_t *payload)
 {
 	if (config.testmode) {
+		DEBUG("auth_create_user_token(): test mode enabled");
 		unsigned char seed[randombytes_SEEDBYTES];
 		memcpy(seed, payload->senderkey, randombytes_SEEDBYTES);
-		randombytes_buf_deterministic(token, sizeof token, seed);
+		randombytes_buf_deterministic(token->token, sizeof token->token, seed);
 	}
 	else randombytes_buf(token->token, sizeof token->token);
-	sodium_bin2hex(token->hextoken, AUTH_HEXLEN, token->token, sizeof token);
+	sodium_bin2hex(token->hextoken, AUTH_HEXLEN, token->token, sizeof token->token);
 	token->expires = htobe64((uint64_t)time(NULL) + 60 * 15); /* expires in 15 minutes */
 	DEBUG("token created: %s", token->hextoken);
 	return 0;
