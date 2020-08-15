@@ -186,30 +186,26 @@ static void auth_op_user_add(lc_message_t *msg)
 	handler_t *h = config.handlers;
 	assert(h != NULL);
 
-	/* TODO: move this whole mess to handle_msg() */
-
 	auth_payload_t p;
 	const int iov_count = 5;
 	struct iovec fields[iov_count];
 	p.fields = fields;
-	auth_decode_packet(msg, &p);
+	if (auth_decode_packet(msg, &p) == -1) {
+		goto auth_op_user_add_exit;
+	}
 
 	/* TODO: validate things like email address */
 
 	auth_user_token_t token;
 	auth_create_user_token(&token, &p);
 
-	/* TODO: (3) create user record in db */
+	/* (3) create user record in db */
 	char pwhash[crypto_pwhash_STRBYTES];
-
-	/* create userid */
 	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
 	char userid[AUTH_HEXLEN];
 	randombytes_buf(userid_bytes, sizeof userid_bytes);
 	sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
 	DEBUG("userid created: %s", userid);
-
-	/* hash password */
 	if (crypto_pwhash_str(pwhash, fields[3].iov_base, fields[3].iov_len,
 			crypto_pwhash_OPSLIMIT_INTERACTIVE,
 			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
@@ -259,6 +255,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	int opt = 1; /* set loopback in case we're on the same host as the sender */
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
+auth_op_user_add_exit:
 	lc_ctx_free(lctx);
 };
 
