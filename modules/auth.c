@@ -100,6 +100,63 @@ exit_err:
 	return ret;
 }
 
+static int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
+{
+	/* unpack outer packet */
+	DEBUG("auth module unpacking outer packet");
+	struct iovec pkt = { .iov_base = msg->data, .iov_len = msg->len };
+	uint8_t op, flags;
+	struct iovec outer[3] = {};
+	if (wire_unpack(&pkt, outer, 3, &op, &flags) == -1) {
+		errno = EBADMSG;
+		return -1;
+	}
+
+	/* decrypt payload */
+	DEBUG("auth module decrypting contents");
+	if (sodium_init() == -1) {
+		ERROR("error initalizing libsodium");
+		return -1;
+	}
+
+	unsigned char data[pkt.iov_len - crypto_box_MACBYTES];
+	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
+	payload->senderkey = outer[0].iov_base;
+	unsigned char *nonce = outer[1].iov_base;
+
+	/* convert private key from hex 2 bin */
+	sodium_hex2bin(privatekey,
+			crypto_box_SECRETKEYBYTES,
+			config.handlers->key_private,
+			crypto_box_SECRETKEYBYTES * 2,
+			NULL,
+			0,
+			NULL);
+
+	if (crypto_box_open_easy(data, outer[2].iov_base, outer[2].iov_len,
+				nonce, payload->senderkey, privatekey) != 0)
+	{
+		ERROR("packet decryption failed");
+		return -1;
+	}
+	DEBUG("auth module decryption successful");
+
+	/* unpack inner data fields */
+	DEBUG("auth module unpacking fields");
+	//const int iov_count = 5;
+	//struct iovec iovs[iov_count];
+	struct iovec clearpkt = { .iov_base = data, .iov_len = pkt.iov_len - crypto_box_MACBYTES };
+	wire_unpack(&clearpkt,
+			payload->fields,
+			payload->fieldcount,
+			&payload->opcode,
+			&payload->flags);
+	for (int i = 1; i < payload->fieldcount; i++) {
+		DEBUG("[%i] %.*s", i, (int)payload->fields[i].iov_len, (char *)payload->fields[i].iov_base);
+	}
+	return 0;
+}
+
 static void auth_op_noop(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
@@ -119,58 +176,14 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	/* TODO: move this whole mess to handle_msg() */
 
-	/* (0) unpack outer packet */
-	DEBUG("auth module unpacking outer packet");
-	struct iovec pkt = { .iov_base = msg->data, .iov_len = msg->len };
-	uint8_t op, flags;
-	struct iovec payload[3] = {};
-	if (wire_unpack(&pkt, payload, 3, &op, &flags) == -1) {
-		errno = EBADMSG;
-		return;
-	}
 
-	/* (1) decrypt packet */
-	DEBUG("auth module decrypting contents");
-	if (sodium_init() == -1) {
-		ERROR("error initalizing libsodium");
-		return;
-	}
-
-	unsigned char data[pkt.iov_len - crypto_box_MACBYTES];
-	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
-	unsigned char *senderkey = payload[0].iov_base;
-	unsigned char *nonce = payload[1].iov_base;
-
-	/* convert private key from hex 2 bin */
-	sodium_hex2bin(privatekey,
-			crypto_box_SECRETKEYBYTES,
-			h->key_private,
-			crypto_box_SECRETKEYBYTES * 2,
-			NULL,
-			0,
-			NULL);
-
-	if (crypto_box_open_easy(data, payload[2].iov_base, payload[2].iov_len,
-				nonce, senderkey, privatekey) != 0)
-	{
-		ERROR("crypto_box_open_easy() failed");
-		return;
-	}
-	DEBUG("auth module decryption successful");
-
-	/* (1b) unpack inner data fields */
-	DEBUG("auth module unpacking fields");
+/******************************/
+	auth_payload_t p;
 	const int iov_count = 5;
-	struct iovec iovs[iov_count];
-	struct iovec clearpkt = { .iov_base = data, .iov_len = pkt.iov_len - crypto_box_MACBYTES };
-	wire_unpack(&clearpkt,
-			iovs,
-			iov_count,
-			&op,
-			&flags);
-	for (int i = 1; i < iov_count; i++) {
-		DEBUG("[%i] %.*s", i, (int)iovs[i].iov_len, (char *)iovs[i].iov_base);
-	}
+	struct iovec fields[iov_count];
+	p.fields = fields;
+	int res = auth_decode_packet(msg, &p);
+/******************************/
 
 	/* TODO: validate things like email address */
 
@@ -181,7 +194,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	uint64_t tokexp;
 	if (config.testmode) {
 		unsigned char seed[randombytes_SEEDBYTES];
-		memcpy(seed, senderkey, randombytes_SEEDBYTES);
+		memcpy(seed, p.senderkey, randombytes_SEEDBYTES);
 		randombytes_buf_deterministic(token, sizeof token, seed);
 	}
 	else randombytes_buf(token, sizeof token);
@@ -201,7 +214,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	DEBUG("userid created: %s", userid);
 
 	/* hash password */
-	if (crypto_pwhash_str(pwhash, iovs[3].iov_base, iovs[3].iov_len,
+	if (crypto_pwhash_str(pwhash, fields[3].iov_base, fields[3].iov_len,
 			crypto_pwhash_OPSLIMIT_INTERACTIVE,
 			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
 	{
@@ -213,11 +226,11 @@ static void auth_op_user_add(lc_message_t *msg)
 		ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
 	}
 	lc_db_open(lctx, h->dbpath);
-	auth_field_set(lctx, userid, hexlen, "pkey", iovs[0].iov_base, iovs[0].iov_len);
-	auth_field_set(lctx, userid, hexlen, "mail", iovs[2].iov_base, iovs[2].iov_len);
-	auth_field_set(lctx, iovs[2].iov_base, iovs[2].iov_len, "user", userid, hexlen);
-	auth_field_set(lctx, userid, hexlen, "pass", iovs[3].iov_base, iovs[3].iov_len);
-	auth_field_set(lctx, userid, hexlen, "serv", iovs[4].iov_base, iovs[4].iov_len);
+	auth_field_set(lctx, userid, hexlen, "pkey", fields[0].iov_base, fields[0].iov_len);
+	auth_field_set(lctx, userid, hexlen, "mail", fields[2].iov_base, fields[2].iov_len);
+	auth_field_set(lctx, fields[2].iov_base, fields[2].iov_len, "user", userid, hexlen);
+	auth_field_set(lctx, userid, hexlen, "pass", fields[3].iov_base, fields[3].iov_len);
+	auth_field_set(lctx, userid, hexlen, "serv", fields[4].iov_base, fields[4].iov_len);
 	auth_field_set(lctx, userid, hexlen, "token", hextoken, hexlen);
 	auth_field_set(lctx, hextoken, hexlen, "user", userid, hexlen);
 	auth_field_set(lctx, hextoken, hexlen, "expires", &tokexp, sizeof tokexp);
@@ -229,7 +242,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	DEBUG("emailing token");
 #if 0
 	char subject[] = "Librecast Live - Confirm Your Email Address";
-	char *to = strndup(iovs[2].iov_base, iovs[2].iov_len);
+	char *to = strndup(fields[2].iov_base, fields[2].iov_len);
 	if (auth_mail_token(subject, to, hextoken) == -1) {
 		ERROR("error in auth_mail_token()");
 	}
@@ -242,7 +255,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	/* (5) reply to reply address */
 	DEBUG("response to requestor");
 	sock = lc_socket_new(lctx);
-	chan = lc_channel_nnew(lctx, senderkey, crypto_box_PUBLICKEYBYTES);
+	chan = lc_channel_nnew(lctx, p.senderkey, crypto_box_PUBLICKEYBYTES);
 	lc_channel_bind(sock, chan);
 	lc_msg_init_size(&response, 2); /* just an opcode + flag really */
 	((uint8_t *)response.data)[0] = AUTH_OP_NOOP;	/* TODO: response opcode */
@@ -320,6 +333,8 @@ void handle_msg(lc_message_t *msg)
 	default:
 		ERROR("Invalid auth opcode received: %u", opcode);
 	}
+
+	DEBUG("handle_msg() - after the handler");
 
 	//lc_ctx_t *lctx = lc_ctx_new();
 	//lc_ctx_t *lctx = lc_channel_ctx(msg->chan);

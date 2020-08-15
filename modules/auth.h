@@ -63,6 +63,15 @@ enum {
 	AUTH_SERV
 };
 
+typedef struct auth_payload_s auth_payload_t;
+struct auth_payload_s {
+	uint8_t		opcode;
+	uint8_t		flags;
+	unsigned char	*senderkey;
+	int		fieldcount;
+	struct iovec	*fields;
+};
+
 void hash_field(unsigned char *hash, size_t hashlen,
 		const char *key, size_t keylen,
 		const char *fld, size_t fldlen);
