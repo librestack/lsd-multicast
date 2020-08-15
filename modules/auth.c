@@ -99,7 +99,7 @@ exit_err:
 	return ret;
 }
 
-static int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
+int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 {
 	/* unpack outer packet */
 	DEBUG("auth module unpacking outer packet");
@@ -144,16 +144,16 @@ static int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	DEBUG("auth module unpacking fields");
 	struct iovec clearpkt = { .iov_base = data, .iov_len = pkt.iov_len - crypto_box_MACBYTES };
 	payload->fieldcount = 5;
+	struct iovec iovs[payload->fieldcount];
+	payload->fields = iovs;
 	wire_unpack(&clearpkt,
 			payload->fields,
 			payload->fieldcount,
 			&payload->opcode,
 			&payload->flags);
-#if 0
 	for (int i = 1; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %.*s", i, (int)payload->fields[i].iov_len, (char *)payload->fields[i].iov_base);
 	}
-#endif
 	return 0;
 }
 

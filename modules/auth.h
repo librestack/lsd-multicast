@@ -89,5 +89,6 @@ void auth_field_set(lc_ctx_t *lctx, char *key, size_t keylen,
 		const char *field, void *data, size_t datalen);
 
 int auth_create_user_token(auth_user_token_t *token, auth_payload_t *payload);
+int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload);
 
 #endif /* _LSDM_AUTH_H */
