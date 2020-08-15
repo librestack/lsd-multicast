@@ -8,7 +8,6 @@
 #include <assert.h>
 #include <curl/curl.h>
 #include <librecast.h>
-#include <sodium.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -157,6 +156,20 @@ static int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	return 0;
 }
 
+int auth_create_user_token(auth_user_token_t *token, auth_payload_t *payload)
+{
+	if (config.testmode) {
+		unsigned char seed[randombytes_SEEDBYTES];
+		memcpy(seed, payload->senderkey, randombytes_SEEDBYTES);
+		randombytes_buf_deterministic(token, sizeof token, seed);
+	}
+	else randombytes_buf(token->token, sizeof token->token);
+	sodium_bin2hex(token->hextoken, AUTH_HEXLEN, token->token, sizeof token);
+	token->expires = htobe64((uint64_t)time(NULL) + 60 * 15); /* expires in 15 minutes */
+	DEBUG("token created: %s", token->hextoken);
+	return 0;
+}
+
 static void auth_op_noop(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
@@ -171,46 +184,29 @@ static void auth_op_user_add(lc_message_t *msg)
 	lc_channel_t *chan;
 	lc_message_t response;
 	handler_t *h = config.handlers;
-
 	assert(h != NULL);
 
 	/* TODO: move this whole mess to handle_msg() */
 
-
-/******************************/
 	auth_payload_t p;
 	const int iov_count = 5;
 	struct iovec fields[iov_count];
 	p.fields = fields;
-	int res = auth_decode_packet(msg, &p);
-/******************************/
+	auth_decode_packet(msg, &p);
 
 	/* TODO: validate things like email address */
 
-	/* (2) create token */
-	unsigned char token[crypto_box_PUBLICKEYBYTES];
-	const size_t hexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
-	char hextoken[hexlen];
-	uint64_t tokexp;
-	if (config.testmode) {
-		unsigned char seed[randombytes_SEEDBYTES];
-		memcpy(seed, p.senderkey, randombytes_SEEDBYTES);
-		randombytes_buf_deterministic(token, sizeof token, seed);
-	}
-	else randombytes_buf(token, sizeof token);
-	sodium_bin2hex(hextoken, hexlen, token, sizeof token);
-	tokexp = htobe64((uint64_t)time(NULL) + 60 * 15); /* expires in 15 minutes */
-
-	DEBUG("token created: %s", hextoken);
+	auth_user_token_t token;
+	auth_create_user_token(&token, &p);
 
 	/* TODO: (3) create user record in db */
 	char pwhash[crypto_pwhash_STRBYTES];
 
 	/* create userid */
 	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
-	char userid[hexlen];
+	char userid[AUTH_HEXLEN];
 	randombytes_buf(userid_bytes, sizeof userid_bytes);
-	sodium_bin2hex(userid, hexlen, userid_bytes, sizeof userid_bytes);
+	sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
 	DEBUG("userid created: %s", userid);
 
 	/* hash password */
@@ -226,14 +222,14 @@ static void auth_op_user_add(lc_message_t *msg)
 		ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
 	}
 	lc_db_open(lctx, h->dbpath);
-	auth_field_set(lctx, userid, hexlen, "pkey", fields[0].iov_base, fields[0].iov_len);
-	auth_field_set(lctx, userid, hexlen, "mail", fields[2].iov_base, fields[2].iov_len);
-	auth_field_set(lctx, fields[2].iov_base, fields[2].iov_len, "user", userid, hexlen);
-	auth_field_set(lctx, userid, hexlen, "pass", fields[3].iov_base, fields[3].iov_len);
-	auth_field_set(lctx, userid, hexlen, "serv", fields[4].iov_base, fields[4].iov_len);
-	auth_field_set(lctx, userid, hexlen, "token", hextoken, hexlen);
-	auth_field_set(lctx, hextoken, hexlen, "user", userid, hexlen);
-	auth_field_set(lctx, hextoken, hexlen, "expires", &tokexp, sizeof tokexp);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "pkey", fields[0].iov_base, fields[0].iov_len);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "mail", fields[2].iov_base, fields[2].iov_len);
+	auth_field_set(lctx, fields[2].iov_base, fields[2].iov_len, "user", userid, AUTH_HEXLEN);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "pass", fields[3].iov_base, fields[3].iov_len);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "serv", fields[4].iov_base, fields[4].iov_len);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "token", token.hextoken, AUTH_HEXLEN);
+	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
+	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "expires", &token.expires, sizeof token.expires);
 
 	/* TODO: logfile entry */
 	DEBUG("user created");
@@ -243,7 +239,7 @@ static void auth_op_user_add(lc_message_t *msg)
 #if 0
 	char subject[] = "Librecast Live - Confirm Your Email Address";
 	char *to = strndup(fields[2].iov_base, fields[2].iov_len);
-	if (auth_mail_token(subject, to, hextoken) == -1) {
+	if (auth_mail_token(subject, to, token.hextoken) == -1) {
 		ERROR("error in auth_mail_token()");
 	}
 	else {

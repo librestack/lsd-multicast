@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <librecast/types.h>
 #include <limits.h>
+#include <sodium.h>
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -25,6 +26,8 @@
  * opcode and flags will use half a byte each and can also overflow
  * if opcode overflows to a whole byte or more, flags becomes a whole byte
  * minimum */
+
+#define AUTH_HEXLEN crypto_box_PUBLICKEYBYTES * 2 + 1
 
 #define AUTH_OPCODES(X) \
 	X(0x0, AUTH_OP_NOOP,		"NOOP",		auth_op_noop) \
@@ -70,6 +73,13 @@ struct auth_payload_s {
 	unsigned char	*senderkey;
 	int		fieldcount;
 	struct iovec	*fields;
+};
+
+typedef struct auth_user_token_s auth_user_token_t;
+struct auth_user_token_s {
+	uint64_t	expires;
+	char		hextoken[AUTH_HEXLEN];
+	unsigned char	token[crypto_box_PUBLICKEYBYTES];
 };
 
 void hash_field(unsigned char *hash, size_t hashlen,
