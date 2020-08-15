@@ -188,12 +188,12 @@ static void auth_op_user_add(lc_message_t *msg)
 	handler_t *h = config.handlers;
 	assert(h != NULL);
 
-	auth_payload_t p;
+	auth_payload_t p = {};
 	const int iov_count = 5;
 	struct iovec fields[iov_count];
 	p.fields = fields;
 	if (auth_decode_packet(msg, &p) == -1) {
-		goto auth_op_user_add_exit;
+		return;
 	}
 
 	/* TODO: validate things like email address */
@@ -257,7 +257,6 @@ static void auth_op_user_add(lc_message_t *msg)
 	int opt = 1; /* set loopback in case we're on the same host as the sender */
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
-auth_op_user_add_exit:
 	lc_ctx_free(lctx);
 };
 
