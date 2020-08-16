@@ -40,7 +40,7 @@ int main()
 	ret = lc_db_get(lctx, config.handlers->dbname, hash, sizeof hash, &vptr, &vlen);
 	if (ret) test_log("lc_db_get() returned %i", ret);
 	test_expectn(config.handlers->key_public, (char *)vptr, vlen);
-
+	free(vptr);
 	config_free();
 	lc_ctx_free(lctx);
 	return fails;
