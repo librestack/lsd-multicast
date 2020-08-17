@@ -77,7 +77,7 @@ int main()
 	flags_check = 0;
 	int res;
 	res = wire_unpack(&data, iovc, iov_count, &op_check, &flags_check);
-	test_assert(res == len_packed, "unpack (%i == %i)", res, len_packed);
+	test_assert(res == len_packed, "unpack (expected %i, returned %i)", len_packed, res);
 	test_assert(op_check == op, "opcode");
 	test_assert(flags_check == flags, "flags");
 	for (int i = 0; i < iov_count; i++) {
