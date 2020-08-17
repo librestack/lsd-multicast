@@ -8,12 +8,14 @@
 #include "../src/wire.h"
 #include <assert.h>
 #include <librecast.h>
+#include <pthread.h>
 #include <signal.h>
 #include <sodium.h>
 #include <unistd.h>
 
-void runtests(pid_t pid)
+void *testthread(void *arg)
 {
+	test_log("test thread starting");
 	lc_ctx_t *lctx;
 	lc_socket_t *sock, *sock_repl;
 	lc_channel_t *chan, *chan_repl;
@@ -112,6 +114,22 @@ void runtests(pid_t pid)
 	test_log("test runner token: %s", hextoken);
 #endif
 	lc_ctx_free(lctx);
+	test_log("test thread exiting");
+	pthread_exit(arg);
+}
+
+void runtests(pid_t pid)
+{
+	struct timespec t = { 0, 499999999 };
+	pthread_t thread;
+	pthread_attr_t attr = {};
+	pthread_attr_init(&attr);
+	pthread_create(&thread, &attr, testthread, NULL);
+	nanosleep(&t, NULL); /* wait for tests to run */
+	pthread_cancel(thread);
+	void *ret = NULL;
+	pthread_join(thread, &ret);
+	test_assert(ret != PTHREAD_CANCELED, "test thread timeout");
 	kill(pid, SIGINT); /* stop server */
 }
 
