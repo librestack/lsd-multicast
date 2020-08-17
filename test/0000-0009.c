@@ -121,13 +121,13 @@ void *testthread(void *arg)
 void runtests(pid_t pid)
 {
 	struct timespec t = { 0, 499999999 };
+	void *ret = NULL;
 	pthread_t thread;
 	pthread_attr_t attr = {};
 	pthread_attr_init(&attr);
 	pthread_create(&thread, &attr, testthread, NULL);
 	nanosleep(&t, NULL); /* wait for tests to run */
 	pthread_cancel(thread);
-	void *ret = NULL;
 	pthread_join(thread, &ret);
 	test_assert(ret != PTHREAD_CANCELED, "test thread timeout");
 	kill(pid, SIGINT); /* stop server */
@@ -135,7 +135,7 @@ void runtests(pid_t pid)
 
 int main()
 {
-	test_name("auth handler test (forking)");
+	test_name("auth handler test");
 	config_include("./0000-0009.conf");
 	pid_t pid = fork();
 	assert (pid != -1);
