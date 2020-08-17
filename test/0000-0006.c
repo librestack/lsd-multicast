@@ -16,12 +16,12 @@ int main()
 	config.loglevel = 127;
 
 	struct iovec data;
-	struct iovec repl = { .iov_base = "r" };
-	struct iovec user = { .iov_base = "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu" };
+	struct iovec repl = { .iov_base = "reply" };
+	struct iovec user = { .iov_base = "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooou" };
 	//struct iovec user = { .iov_base = "u" };
-	struct iovec mail = { .iov_base = "e" };
-	struct iovec pass = { .iov_base = "p" };
-	struct iovec serv = { .iov_base = "s" };
+	struct iovec mail = { .iov_base = "email@example.com" };
+	struct iovec pass = { .iov_base = "password" };
+	struct iovec serv = { .iov_base = "service" };
 	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
 	struct iovec iovc[5] = {};
 	const int iov_count = sizeof iovs / sizeof iovs[0];
@@ -109,7 +109,6 @@ int main()
 	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == -1,
 			"use length to read beyond end of data (EBADMSG)");
 	test_assert(errno == EBADMSG, "errno == EBADMSG");
-	//test_assert(((uint8_t *)data.iov_base + data.iov_len)[0] == 'a', "read beyond end");
 	free(data.iov_base);
 
 	return fails;
