@@ -114,18 +114,28 @@ void *testthread(void *arg)
 	sodium_bin2hex(hextoken, hexlen, token, sizeof token);
 	test_log("test runner token: %s", hextoken);
 #endif
+	/* we finished quickly, wake the test runner */
+	pthread_kill(*((pthread_t *)arg), SIGINT);
 	test_log("test thread exiting");
 	pthread_exit(arg);
+}
+
+void sighandler(int sig)
+{
+	test_log("signal caught: %i", sig);
 }
 
 void runtests(pid_t pid)
 {
 	struct timespec t = { 3, 0 }; /* crypto code is slow under valgrind */
 	void *ret = NULL;
+	struct sigaction sa = { .sa_handler = sighandler };
+	sigaction(SIGINT, &sa, NULL);
 	pthread_t thread;
+	pthread_t self = pthread_self();
 	pthread_attr_t attr = {};
 	pthread_attr_init(&attr);
-	pthread_create(&thread, &attr, testthread, NULL);
+	pthread_create(&thread, &attr, testthread, &self);
 	nanosleep(&t, NULL); /* wait for tests to run */
 	pthread_cancel(thread);
 	pthread_join(thread, &ret);
