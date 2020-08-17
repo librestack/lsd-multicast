@@ -42,7 +42,7 @@ ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count,
 	void *endptr = data->iov_base + data->iov_len;
 	*op = ((uint8_t *)ptr++)[0];
 	*flags = ((uint8_t *)ptr++)[0];
-	for (int i = 0; ptr < endptr; i++) {
+	for (int i = 0; i < iov_count && ptr < endptr; i++) {
 		uint64_t n = 0, shift = 0;
 		uint8_t b;
 		do {
