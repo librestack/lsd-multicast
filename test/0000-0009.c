@@ -13,10 +13,11 @@
 #include <sodium.h>
 #include <unistd.h>
 
+lc_ctx_t *lctx = NULL;
+
 void *testthread(void *arg)
 {
 	test_log("test thread starting");
-	lc_ctx_t *lctx;
 	lc_socket_t *sock, *sock_repl;
 	lc_channel_t *chan, *chan_repl;
 	lc_message_t msg, msg_repl;
@@ -113,7 +114,6 @@ void *testthread(void *arg)
 	sodium_bin2hex(hextoken, hexlen, token, sizeof token);
 	test_log("test runner token: %s", hextoken);
 #endif
-	lc_ctx_free(lctx);
 	test_log("test thread exiting");
 	pthread_exit(arg);
 }
@@ -131,6 +131,7 @@ void runtests(pid_t pid)
 	pthread_join(thread, &ret);
 	test_assert(ret != PTHREAD_CANCELED, "test thread timeout");
 	kill(pid, SIGINT); /* stop server */
+	lc_ctx_free(lctx);
 }
 
 int main()

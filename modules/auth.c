@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <curl/curl.h>
 #include <librecast.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -131,7 +132,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 			NULL,
 			0,
 			NULL);
-
+	memset(data, 0, sizeof data);
 	if (crypto_box_open_easy(data, outer[2].iov_base, outer[2].iov_len,
 				nonce, payload->senderkey, privatekey) != 0)
 	{
@@ -151,9 +152,11 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 			payload->fieldcount,
 			&payload->opcode,
 			&payload->flags);
+#if 0
 	for (int i = 1; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %.*s", i, (int)payload->fields[i].iov_len, (char *)payload->fields[i].iov_base);
 	}
+#endif
 	return 0;
 }
 
@@ -180,17 +183,20 @@ static void auth_op_noop(lc_message_t *msg)
 static void auth_op_user_add(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
-
-	lc_ctx_t *lctx;
-	lc_socket_t *sock;
-	lc_channel_t *chan;
-	lc_message_t response;
+	int state;
+	lc_ctx_t *lctx = NULL;
+	lc_socket_t *sock = NULL;
+	lc_channel_t *chan = NULL;
+	lc_message_t response = {};
 	handler_t *h = config.handlers;
-	assert(h != NULL);
+
+	/* FIXME: must have keys to continue */
 
 	auth_payload_t p = {};
+	memset(&p, 0, sizeof p);
 	const int iov_count = 5;
 	struct iovec fields[iov_count];
+	memset(fields, 0, sizeof fields);
 	p.fields = fields;
 	if (auth_decode_packet(msg, &p) == -1) {
 		return;
@@ -202,6 +208,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	auth_create_user_token(&token, &p);
 
 	/* (3) create user record in db */
+
 	char pwhash[crypto_pwhash_STRBYTES];
 	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
 	char userid[AUTH_HEXLEN];
@@ -214,7 +221,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	{
 		ERROR("crypto_pwhash() error");
 	}
-
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
 	lctx = lc_ctx_new();
 	if (mkdir(h->dbpath, S_IRWXU) == -1 && errno != EEXIST) {
 		ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
@@ -257,7 +264,9 @@ static void auth_op_user_add(lc_message_t *msg)
 	int opt = 1; /* set loopback in case we're on the same host as the sender */
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
+	lc_msg_free(&response);
 	lc_ctx_free(lctx);
+	pthread_setcancelstate(state, NULL);
 };
 
 static void auth_op_user_delete(lc_message_t *msg)
