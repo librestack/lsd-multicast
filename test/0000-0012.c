@@ -65,13 +65,12 @@ void runtests()
 	struct iovec iovnon = { .iov_base = nonce, .iov_len = crypto_box_NONCEBYTES };
 	struct iovec crypted = { .iov_base = ciphertext, .iov_len = cipherlen };
 	struct iovec *payload[] = { &iovkey, &iovnon, &crypted };
-	struct iovec pkt;
+	struct iovec pkt = {0};
 	len = wire_pack(&pkt, payload, 3, op, flags);
 
 	lc_msg_init_data(&msg, pkt.iov_base, pkt.iov_len, NULL, NULL);
-	test_log("packed %zu bytes ready to send", data.iov_len);
 
-	auth_payload_t p;
+	auth_payload_t p = {0};
 	test_assert(auth_decode_packet(&msg, &p) == 0, "auth_decode_packet()");
 
 	free(pkt.iov_base);
