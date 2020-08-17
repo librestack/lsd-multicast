@@ -102,29 +102,35 @@ exit_err:
 
 int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 {
-	/* unpack outer packet */
-	DEBUG("auth module unpacking outer packet");
+	/* unpack outer packet [opcode][flags] + [public key][nonce][payload] */
+	DEBUG("auth module unpacking outer packet of %zu bytes", msg->len);
 	struct iovec pkt = { .iov_base = msg->data, .iov_len = msg->len };
 	uint8_t op, flags;
 	struct iovec outer[3] = {};
+
 	if (wire_unpack(&pkt, outer, 3, &op, &flags) == -1) {
 		errno = EBADMSG;
 		return -1;
 	}
+	for (int i = 0; i < 3; i++) {
+		DEBUG("outer[%i].iov_len=%zu", i, outer[i].iov_len);
+		if (outer[i].iov_len < 1) {
+			errno = EBADMSG;
+			return -1;
+		}
+	}
 
-	/* decrypt payload */
 	DEBUG("auth module decrypting contents");
 	if (sodium_init() == -1) {
 		ERROR("error initalizing libsodium");
 		return -1;
 	}
 
-	unsigned char data[pkt.iov_len - crypto_box_MACBYTES];
+	unsigned char data[outer[2].iov_len - crypto_box_MACBYTES];
 	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
 	payload->senderkey = outer[0].iov_base;
 	unsigned char *nonce = outer[1].iov_base;
 
-	/* convert private key from hex 2 bin */
 	sodium_hex2bin(privatekey,
 			crypto_box_SECRETKEYBYTES,
 			config.handlers->key_private,
@@ -143,7 +149,9 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 
 	/* unpack inner data fields */
 	DEBUG("auth module unpacking fields");
-	struct iovec clearpkt = { .iov_base = data, .iov_len = pkt.iov_len - crypto_box_MACBYTES };
+	struct iovec clearpkt = {0};
+	clearpkt.iov_base = data;
+	clearpkt.iov_len = outer[2].iov_len - crypto_box_MACBYTES;
 	payload->fieldcount = 5;
 	struct iovec iovs[payload->fieldcount];
 	payload->fields = iovs;
@@ -152,11 +160,16 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 			payload->fieldcount,
 			&payload->opcode,
 			&payload->flags);
-#if 0
+
+	DEBUG("wire_unpack() done, dumping fields...");
+	for (int i = 1; i < payload->fieldcount; i++) {
+		DEBUG("[%i] %zu bytes", i, payload->fields[i].iov_len);
+	}
+
 	for (int i = 1; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %.*s", i, (int)payload->fields[i].iov_len, (char *)payload->fields[i].iov_base);
 	}
-#endif
+
 	return 0;
 }
 
@@ -192,7 +205,7 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	/* FIXME: must have keys to continue */
 
-	auth_payload_t p = {};
+	auth_payload_t p = {0};
 	memset(&p, 0, sizeof p);
 	const int iov_count = 5;
 	struct iovec fields[iov_count];
