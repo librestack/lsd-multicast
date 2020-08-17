@@ -120,7 +120,7 @@ void *testthread(void *arg)
 
 void runtests(pid_t pid)
 {
-	struct timespec t = { 0, 499999999 };
+	struct timespec t = { 3, 0 }; /* crypto code is slow under valgrind */
 	void *ret = NULL;
 	pthread_t thread;
 	pthread_attr_t attr = {};
