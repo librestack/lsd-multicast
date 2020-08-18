@@ -34,7 +34,7 @@ int auth_field_get(lc_ctx_t *lctx, char *key, size_t keylen,
 		char *field, void *data, size_t *datalen)
 {
 	int ret = 0;
-	unsigned char hash[crypto_generichash_BYTES];
+	unsigned char hash[crypto_generichash_BYTES] = "";
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
 	ret = lc_db_get(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
 	return ret;
@@ -199,6 +199,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	}
 	DEBUG("wire_unpack() fieldcount: %i", payload->fieldcount);
 	DEBUG("wire_unpack() done, dumping fields...");
+
 	for (int i = 1; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %zu bytes", i, payload->fields[i].iov_len);
 	}
@@ -241,14 +242,12 @@ static void auth_op_user_add(lc_message_t *msg)
 		fieldcount
 	};
 	struct iovec fields[fieldcount] = {0};
-	auth_payload_t p = {0};
-	p.fields = fields;
-	p.fieldcount = fieldcount;
+	auth_payload_t p = { .fields = fields, .fieldcount = fieldcount };
 	int state;
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL;
 	lc_channel_t *chan = NULL;
-	lc_message_t response = {};
+	lc_message_t response = {0};
 	handler_t *h = config.handlers;
 
 	/* FIXME: must have keys to continue */
@@ -372,7 +371,7 @@ static void auth_op_auth_service(lc_message_t *msg)
 		serv,
 		fieldcount
 	};
-	struct iovec fields[fieldcount];
+	struct iovec fields[fieldcount] = {0};
 	auth_payload_t p = {0};
 	p.fields = fields;
 	p.fieldcount = fieldcount;
@@ -380,7 +379,7 @@ static void auth_op_auth_service(lc_message_t *msg)
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL;
 	lc_channel_t *chan = NULL;
-	lc_message_t response = {};
+	lc_message_t response = {0};
 	handler_t *h = config.handlers;
 
 	/* FIXME: must have keys to continue */
@@ -391,14 +390,15 @@ static void auth_op_auth_service(lc_message_t *msg)
 	}
 
 	/* hash password to compare */
-	char pwhash[crypto_pwhash_STRBYTES];
+#if 0
+	char pwhash[crypto_pwhash_STRBYTES] = "";
 	if (crypto_pwhash_str(pwhash, fields[pass].iov_base, fields[pass].iov_len,
 			crypto_pwhash_OPSLIMIT_INTERACTIVE,
 			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
 	{
 		ERROR("crypto_pwhash() error");
 	}
-
+#endif
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
 	lctx = lc_ctx_new();
 	if (mkdir(h->dbpath, S_IRWXU) == -1 && errno != EEXIST) {
@@ -406,16 +406,20 @@ static void auth_op_auth_service(lc_message_t *msg)
 	}
 
 	lc_db_open(lctx, h->dbpath);
-	unsigned char hash[AUTH_HEXLEN];
+	unsigned char hash[AUTH_HEXLEN] = "";
 	void *vptr = NULL;
 	size_t vlen;
 	int ret;
 
 	/* find userid for email */
-	auth_field_get(lctx, fields[mail].iov_base, fields[mail].iov_len, "user", &vptr, &vlen);
-	DEBUG("got userid '%.*s' for email '%.*s'", vptr, vlen,
+	if (auth_field_get(lctx, fields[mail].iov_base, fields[mail].iov_len, "user", &vptr, &vlen)) {
+		ERROR("invalid mail");
+	}
+	else {
+		DEBUG("got userid '%.*s' for email '%.*s'", vptr, vlen,
 			fields[mail].iov_base, fields[mail].iov_len);
-	free(vptr);
+		free(vptr);
+	}
 
 	/* TODO: fetch password from database */
 	/* TODO: check password */
