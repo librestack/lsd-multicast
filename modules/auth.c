@@ -253,7 +253,6 @@ static void auth_op_user_add(lc_message_t *msg)
 		ERROR("invalid email address");
 		return;
 	}
-	char *to = strndup(fields[2].iov_base, fields[2].iov_len);
 
 	auth_user_token_t token;
 	auth_create_user_token(&token, &p);
@@ -292,15 +291,17 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	/* (4) email token */
 	DEBUG("emailing token");
-
-	char subject[] = "Librecast Live - Confirm Your Email Address";
-	if (auth_mail_token(subject, to, token.hextoken) == -1) {
-		ERROR("error in auth_mail_token()");
+	if (!config.testmode) {
+		char *to = strndup(fields[2].iov_base, fields[2].iov_len);
+		char subject[] = "Librecast Live - Confirm Your Email Address";
+		if (auth_mail_token(subject, to, token.hextoken) == -1) {
+			ERROR("error in auth_mail_token()");
+		}
+		else {
+			DEBUG("email sent");
+		}
+		free(to);
 	}
-	else {
-		DEBUG("email sent");
-	}
-	free(to);
 
 	/* (5) reply to reply address */
 	DEBUG("response to requestor");

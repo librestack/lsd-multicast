@@ -127,7 +127,7 @@ void sighandler(int sig)
 
 void runtests(pid_t pid)
 {
-	struct timespec t = { 3, 0 }; /* crypto code is slow under valgrind */
+	struct timespec t = { 8, 0 }; /* crypto code is slow under valgrind */
 	void *ret = NULL;
 	struct sigaction sa = { .sa_handler = sighandler };
 	sigaction(SIGINT, &sa, NULL);
