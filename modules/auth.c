@@ -52,6 +52,12 @@ int auth_user_create(struct iovec *mail, struct iovec *pass)
 {
 	if (!auth_valid_email(mail->iov_base, mail->iov_len))
 		return -1;
+
+	/* we don't do any strength checking on passwords here
+	 * save that for the UI where we can give proper feedback */
+	if (!pass->iov_len) return -1;
+
+
 	return 0;
 }
 

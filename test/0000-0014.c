@@ -14,11 +14,15 @@ int main()
 	user_invalid.iov_len = strlen(user_invalid.iov_base);
 	struct iovec pass = { .iov_base = "password" };
 	pass.iov_len = strlen(pass.iov_base);
+	struct iovec nopass = { .iov_base = "", .iov_len = 0 };
 
 	test_assert(auth_user_create(&user, &pass) == 0, "auth_user_create()");
 
 	test_assert(auth_user_create(&user_invalid, &pass) == -1,
 			"auth_user_create() - invalid email");
+
+	test_assert(auth_user_create(&user, &nopass) == -1,
+			"auth_user_create() - no password");
 
 	return fails;
 }
