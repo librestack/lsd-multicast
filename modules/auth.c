@@ -156,18 +156,16 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 		errno = EBADMSG;
 		return -1;
 	}
-
 	DEBUG("auth module decrypting contents");
 	if (sodium_init() == -1) {
 		ERROR("error initalizing libsodium");
 		return -1;
 	}
 
-	unsigned char data[outer[2].iov_len - crypto_box_MACBYTES];
+	unsigned char data[outer[fld_payload].iov_len - crypto_box_MACBYTES];
 	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
-	payload->senderkey = outer[0].iov_base;
-	unsigned char *nonce = outer[1].iov_base;
-
+	payload->senderkey = outer[fld_key].iov_base;
+	unsigned char *nonce = outer[fld_nonce].iov_base;
 	sodium_hex2bin(privatekey,
 			crypto_box_SECRETKEYBYTES,
 			config.handlers->key_private,
@@ -188,7 +186,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	DEBUG("auth module unpacking fields");
 	struct iovec clearpkt = {0};
 	clearpkt.iov_base = data;
-	clearpkt.iov_len = outer[2].iov_len - crypto_box_MACBYTES;
+	clearpkt.iov_len = outer[fld_payload].iov_len - crypto_box_MACBYTES;
 	payload->fieldcount = 5;
 	if (wire_unpack(&clearpkt,
 			payload->fields,
@@ -198,12 +196,10 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	{
 		return -1;
 	}
-
 	DEBUG("wire_unpack() done, dumping fields...");
 	for (int i = 1; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %zu bytes", i, payload->fields[i].iov_len);
 	}
-
 	for (int i = 1; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %.*s", i, (int)payload->fields[i].iov_len, (char *)payload->fields[i].iov_base);
 	}
