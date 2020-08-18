@@ -38,6 +38,12 @@ void auth_field_set(lc_ctx_t *lctx, char *key, size_t keylen,
 	lc_db_set(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
 }
 
+int auth_valid_email(char *mail, size_t len)
+{
+	/* check for '@' */
+	return (memchr(mail, '@', len) != 0);
+}
+
 static int auth_mail_token(char *subject, char *to, char *token)
 {
 	char filename[] = "/tmp/lsd-auth-mail-XXXXXX";
@@ -82,13 +88,21 @@ static int auth_mail_token(char *subject, char *to, char *token)
 		curl_easy_setopt(curl, CURLOPT_USE_SSL, (long)CURLUSESSL_ALL);
 		curl_easy_setopt(curl, CURLOPT_MAIL_FROM, FROM);
 		recipients = curl_slist_append(recipients, to);
+		DEBUG("to: %s", to);
+		if (!recipients) {
+			ERROR("unable to append recipients");
+			ret = -1;
+			goto cleanup;
+		}
 		curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
 		curl_easy_setopt(curl, CURLOPT_READDATA, f);
 		curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
 		if (config.debug) curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 		if (curl_easy_perform(curl) != CURLE_OK) {
 			ERROR("curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+			ret = -1;
 		}
+cleanup:
 		curl_slist_free_all(recipients);
 		curl_easy_cleanup(curl);
 	}
@@ -153,8 +167,6 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	clearpkt.iov_base = data;
 	clearpkt.iov_len = outer[2].iov_len - crypto_box_MACBYTES;
 	payload->fieldcount = 5;
-	struct iovec iovs[payload->fieldcount];
-	payload->fields = iovs;
 	if (wire_unpack(&clearpkt,
 			payload->fields,
 			payload->fieldcount,
@@ -220,6 +232,11 @@ static void auth_op_user_add(lc_message_t *msg)
 	}
 
 	/* TODO: validate things like email address */
+	if (!auth_valid_email(fields[2].iov_base, fields[2].iov_len)) {
+		ERROR("invalid email address");
+		return;
+	}
+	char *to = strndup(fields[2].iov_base, fields[2].iov_len);
 
 	auth_user_token_t token;
 	auth_create_user_token(&token, &p);
@@ -258,9 +275,8 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	/* (4) email token */
 	DEBUG("emailing token");
-#if 0
+
 	char subject[] = "Librecast Live - Confirm Your Email Address";
-	char *to = strndup(fields[2].iov_base, fields[2].iov_len);
 	if (auth_mail_token(subject, to, token.hextoken) == -1) {
 		ERROR("error in auth_mail_token()");
 	}
@@ -268,7 +284,6 @@ static void auth_op_user_add(lc_message_t *msg)
 		DEBUG("email sent");
 	}
 	free(to);
-#endif
 
 	/* (5) reply to reply address */
 	DEBUG("response to requestor");
