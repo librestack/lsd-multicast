@@ -38,10 +38,17 @@ void auth_field_set(lc_ctx_t *lctx, char *key, size_t keylen,
 	lc_db_set(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
 }
 
+/* minimal email verification - our smtp server will do the rest */
 int auth_valid_email(char *mail, size_t len)
 {
-	/* check for '@' */
-	return (memchr(mail, '@', len) != 0);
+	char *at, *end;
+	end = mail + len;
+	if (len < 3) return 0;		/* too short at least 3 chars eg. a@b */
+	mail++; len--;			/* must have at least one char for local part */
+	at = memchr(mail, '@', len);
+	if (!at) return 0;		/* check for '@' */
+	if (at + 1 >= end) return 0;	/* no domain part */
+	return 1;
 }
 
 static int auth_mail_token(char *subject, char *to, char *token)
