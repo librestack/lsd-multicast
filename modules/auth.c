@@ -405,8 +405,6 @@ static void auth_op_auth_service(lc_message_t *msg)
 		ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
 	}
 
-	/* TODO: fetch password from database */
-
 	lc_db_open(lctx, h->dbpath);
 	unsigned char hash[AUTH_HEXLEN];
 	void *vptr = NULL;
@@ -419,34 +417,11 @@ static void auth_op_auth_service(lc_message_t *msg)
 			fields[mail].iov_base, fields[mail].iov_len);
 	free(vptr);
 
-#if 0
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "pkey", fields[0].iov_base, fields[0].iov_len);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "mail", fields[2].iov_base, fields[2].iov_len);
-	auth_field_set(lctx, fields[2].iov_base, fields[2].iov_len, "user", userid, AUTH_HEXLEN);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "pass", fields[3].iov_base, fields[3].iov_len);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "serv", fields[4].iov_base, fields[4].iov_len);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "token", token.hextoken, AUTH_HEXLEN);
-	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
-	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "expires", &token.expires, sizeof token.expires);
-#endif
-
+	/* TODO: fetch password from database */
+	/* TODO: check password */
 	/* TODO: logfile entry */
+	/* TODO reply to reply address */
 
-#if 0
-	/* (5) reply to reply address */
-	DEBUG("response to requestor");
-	sock = lc_socket_new(lctx);
-	chan = lc_channel_nnew(lctx, p.senderkey, crypto_box_PUBLICKEYBYTES);
-	lc_channel_bind(sock, chan);
-	lc_msg_init_size(&response, 2); /* just an opcode + flag really */
-	((uint8_t *)response.data)[0] = AUTH_OP_NOOP;	/* TODO: response opcode */
-	((uint8_t *)response.data)[1] = 7;		/* TODO: define response codes */
-	int opt = 1; /* set loopback in case we're on the same host as the sender */
-	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
-	lc_msg_send(chan, &response);
-	lc_msg_free(&response);
-#endif
-exit_cleanup:
 	lc_ctx_free(lctx);
 	pthread_setcancelstate(state, NULL);
 
