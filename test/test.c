@@ -71,6 +71,17 @@ void test_expectn(char *expected, char *got, size_t len)
 	test_strncmp(expected, got, len, "expected: '%s', got: '%s'", expected, got);
 }
 
+void test_expectiov(struct iovec *expected, struct iovec *got)
+{
+	test_assert(expected->iov_len == got->iov_len, "expected '%.*s' (length mismatch) %zu != %zu",
+			(int)expected->iov_len, (char *)expected->iov_base,
+			expected->iov_len, got->iov_len);
+	if (expected->iov_len != got->iov_len) return;
+	test_strcmp(expected->iov_base, got->iov_base, "expected: '%.*s', got: '%.*s'",
+			(int)expected->iov_len, (char *)expected->iov_base,
+			(int)got->iov_len, (char *)got->iov_base);
+}
+
 void test_log(char *msg, ...)
 {
 	char *b;

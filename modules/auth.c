@@ -61,6 +61,11 @@ int auth_user_create(struct iovec *mail, struct iovec *pass)
 	return 0;
 }
 
+int auth_user_bymail(struct iovec *mail, struct iovec *userid)
+{
+	return 0;
+}
+
 /* minimal email verification - our smtp server will do the rest */
 int auth_valid_email(char *mail, size_t len)
 {
