@@ -135,20 +135,26 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 {
 	/* unpack outer packet [opcode][flags] + [public key][nonce][payload] */
 	DEBUG("auth module unpacking outer packet of %zu bytes", msg->len);
+	enum { /* outer fields */
+		fld_key,
+		fld_nonce,
+		fld_payload,
+		outerfields
+	};
 	struct iovec pkt = { .iov_base = msg->data, .iov_len = msg->len };
 	uint8_t op, flags;
-	struct iovec outer[3] = {};
+	struct iovec outer[outerfields] = {0};
 
-	if (wire_unpack(&pkt, outer, 3, &op, &flags) == -1) {
+	if (wire_unpack(&pkt, outer, outerfields, &op, &flags) == -1) {
 		errno = EBADMSG;
 		return -1;
 	}
-	for (int i = 0; i < 3; i++) {
-		DEBUG("outer[%i].iov_len=%zu", i, outer[i].iov_len);
-		if (outer[i].iov_len < 1) {
-			errno = EBADMSG;
-			return -1;
-		}
+	/* outer fields are all required */
+	if ((outer[fld_key].iov_len != crypto_box_PUBLICKEYBYTES)
+	||  (outer[fld_nonce].iov_len != crypto_box_NONCEBYTES)
+	||  (outer[fld_payload].iov_len < 1)) {
+		errno = EBADMSG;
+		return -1;
 	}
 
 	DEBUG("auth module decrypting contents");
@@ -359,6 +365,17 @@ static void auth_op_key_replace(lc_message_t *msg)
 static void auth_op_auth_service(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
+	enum {
+		repl,
+		user,
+		mail,
+		pass,
+		serv,
+		fieldcount
+	};
+	struct iovec fields[fieldcount];
+	auth_payload_t p = {0};
+	p.fields = fields;
 	int state;
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL;
@@ -368,12 +385,6 @@ static void auth_op_auth_service(lc_message_t *msg)
 
 	/* FIXME: must have keys to continue */
 
-	auth_payload_t p = {0};
-	memset(&p, 0, sizeof p);
-	const int iov_count = 5;
-	struct iovec fields[iov_count];
-	memset(fields, 0, sizeof fields);
-	p.fields = fields;
 	if (auth_decode_packet(msg, &p) == -1) {
 		perror("auth_decode_packet()");
 		return;
@@ -381,9 +392,7 @@ static void auth_op_auth_service(lc_message_t *msg)
 
 	/* hash password to compare */
 	char pwhash[crypto_pwhash_STRBYTES];
-	//unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
-	//char userid[AUTH_HEXLEN];
-	if (crypto_pwhash_str(pwhash, fields[3].iov_base, fields[3].iov_len,
+	if (crypto_pwhash_str(pwhash, fields[pass].iov_base, fields[pass].iov_len,
 			crypto_pwhash_OPSLIMIT_INTERACTIVE,
 			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
 	{
@@ -403,11 +412,11 @@ static void auth_op_auth_service(lc_message_t *msg)
 	void *vptr = NULL;
 	size_t vlen;
 	int ret;
-	/* find userid for email */
 
-	auth_field_get(lctx, fields[3].iov_base, fields[3].iov_len, "user", &vptr, &vlen);
+	/* find userid for email */
+	auth_field_get(lctx, fields[mail].iov_base, fields[mail].iov_len, "user", &vptr, &vlen);
 	DEBUG("got userid '%.*s' for email '%.*s'", vptr, vlen,
-			fields[3].iov_base, fields[3].iov_len);
+			fields[mail].iov_base, fields[mail].iov_len);
 	free(vptr);
 
 #if 0
