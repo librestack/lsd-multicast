@@ -48,6 +48,13 @@ void auth_field_set(lc_ctx_t *lctx, char *key, size_t keylen,
 	lc_db_set(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
 }
 
+int auth_user_create(struct iovec *mail, struct iovec *pass)
+{
+	if (!auth_valid_email(mail->iov_base, mail->iov_len))
+		return -1;
+	return 0;
+}
+
 /* minimal email verification - our smtp server will do the rest */
 int auth_valid_email(char *mail, size_t len)
 {
