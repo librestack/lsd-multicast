@@ -30,6 +30,16 @@ void hash_field(unsigned char *hash, size_t hashlen,
 	crypto_generichash_final(&state, hash, hashlen);
 }
 
+int auth_field_get(lc_ctx_t *lctx, char *key, size_t keylen,
+		char *field, void *data, size_t *datalen)
+{
+	int ret = 0;
+	unsigned char hash[crypto_generichash_BYTES];
+	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
+	ret = lc_db_get(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
+	return ret;
+}
+
 void auth_field_set(lc_ctx_t *lctx, char *key, size_t keylen,
 		const char *field, void *data, size_t datalen)
 {
@@ -341,6 +351,88 @@ static void auth_op_key_replace(lc_message_t *msg)
 static void auth_op_auth_service(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
+	int state;
+	lc_ctx_t *lctx = NULL;
+	lc_socket_t *sock = NULL;
+	lc_channel_t *chan = NULL;
+	lc_message_t response = {};
+	handler_t *h = config.handlers;
+
+	/* FIXME: must have keys to continue */
+
+	auth_payload_t p = {0};
+	memset(&p, 0, sizeof p);
+	const int iov_count = 5;
+	struct iovec fields[iov_count];
+	memset(fields, 0, sizeof fields);
+	p.fields = fields;
+	if (auth_decode_packet(msg, &p) == -1) {
+		perror("auth_decode_packet()");
+		return;
+	}
+
+	/* hash password to compare */
+	char pwhash[crypto_pwhash_STRBYTES];
+	//unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
+	//char userid[AUTH_HEXLEN];
+	if (crypto_pwhash_str(pwhash, fields[3].iov_base, fields[3].iov_len,
+			crypto_pwhash_OPSLIMIT_INTERACTIVE,
+			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
+	{
+		ERROR("crypto_pwhash() error");
+	}
+
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
+	lctx = lc_ctx_new();
+	if (mkdir(h->dbpath, S_IRWXU) == -1 && errno != EEXIST) {
+		ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
+	}
+
+	/* TODO: fetch password from database */
+
+	lc_db_open(lctx, h->dbpath);
+	unsigned char hash[AUTH_HEXLEN];
+	void *vptr = NULL;
+	size_t vlen;
+	int ret;
+	/* find userid for email */
+
+	auth_field_get(lctx, fields[3].iov_base, fields[3].iov_len, "user", &vptr, &vlen);
+	DEBUG("got userid '%.*s' for email '%.*s'", vptr, vlen,
+			fields[3].iov_base, fields[3].iov_len);
+	free(vptr);
+
+#if 0
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "pkey", fields[0].iov_base, fields[0].iov_len);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "mail", fields[2].iov_base, fields[2].iov_len);
+	auth_field_set(lctx, fields[2].iov_base, fields[2].iov_len, "user", userid, AUTH_HEXLEN);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "pass", fields[3].iov_base, fields[3].iov_len);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "serv", fields[4].iov_base, fields[4].iov_len);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "token", token.hextoken, AUTH_HEXLEN);
+	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
+	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "expires", &token.expires, sizeof token.expires);
+#endif
+
+	/* TODO: logfile entry */
+
+#if 0
+	/* (5) reply to reply address */
+	DEBUG("response to requestor");
+	sock = lc_socket_new(lctx);
+	chan = lc_channel_nnew(lctx, p.senderkey, crypto_box_PUBLICKEYBYTES);
+	lc_channel_bind(sock, chan);
+	lc_msg_init_size(&response, 2); /* just an opcode + flag really */
+	((uint8_t *)response.data)[0] = AUTH_OP_NOOP;	/* TODO: response opcode */
+	((uint8_t *)response.data)[1] = 7;		/* TODO: define response codes */
+	int opt = 1; /* set loopback in case we're on the same host as the sender */
+	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
+	lc_msg_send(chan, &response);
+	lc_msg_free(&response);
+#endif
+exit_cleanup:
+	lc_ctx_free(lctx);
+	pthread_setcancelstate(state, NULL);
+
 };
 
 void init(void)
