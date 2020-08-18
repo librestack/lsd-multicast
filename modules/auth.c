@@ -236,6 +236,9 @@ static void auth_op_user_add(lc_message_t *msg)
 		serv,
 		fieldcount
 	};
+	struct iovec fields[fieldcount] = {0};
+	auth_payload_t p = {0};
+	p.fields = fields;
 	int state;
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL;
@@ -245,9 +248,6 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	/* FIXME: must have keys to continue */
 
-	auth_payload_t p = {0};
-	struct iovec fields[fieldcount] = {0};
-	p.fields = fields;
 	if (auth_decode_packet(msg, &p) == -1) {
 		perror("auth_decode_packet()");
 		return;
