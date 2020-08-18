@@ -419,8 +419,9 @@ static void auth_op_auth_service(lc_message_t *msg)
 
 	/* TODO: fetch password from database */
 	/* TODO: check password */
+	/* TODO: create capability token */
 	/* TODO: logfile entry */
-	/* TODO reply to reply address */
+	/* TODO: reply to reply address */
 
 	lc_ctx_free(lctx);
 	pthread_setcancelstate(state, NULL);
