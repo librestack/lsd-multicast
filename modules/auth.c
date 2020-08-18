@@ -228,6 +228,14 @@ static void auth_op_noop(lc_message_t *msg)
 static void auth_op_user_add(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
+	enum {
+		repl,
+		user,
+		mail,
+		pass,
+		serv,
+		fieldcount
+	};
 	int state;
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL;
@@ -238,10 +246,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	/* FIXME: must have keys to continue */
 
 	auth_payload_t p = {0};
-	memset(&p, 0, sizeof p);
-	const int iov_count = 5;
-	struct iovec fields[iov_count];
-	memset(fields, 0, sizeof fields);
+	struct iovec fields[fieldcount] = {0};
 	p.fields = fields;
 	if (auth_decode_packet(msg, &p) == -1) {
 		perror("auth_decode_packet()");
@@ -249,7 +254,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	}
 
 	/* TODO: validate things like email address */
-	if (!auth_valid_email(fields[2].iov_base, fields[2].iov_len)) {
+	if (!auth_valid_email(fields[mail].iov_base, fields[mail].iov_len)) {
 		ERROR("invalid email address");
 		return;
 	}
@@ -265,7 +270,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	randombytes_buf(userid_bytes, sizeof userid_bytes);
 	sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
 	DEBUG("userid created: %s", userid);
-	if (crypto_pwhash_str(pwhash, fields[3].iov_base, fields[3].iov_len,
+	if (crypto_pwhash_str(pwhash, fields[pass].iov_base, fields[pass].iov_len,
 			crypto_pwhash_OPSLIMIT_INTERACTIVE,
 			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
 	{
@@ -277,11 +282,16 @@ static void auth_op_user_add(lc_message_t *msg)
 		ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
 	}
 	lc_db_open(lctx, h->dbpath);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "pkey", fields[0].iov_base, fields[0].iov_len);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "mail", fields[2].iov_base, fields[2].iov_len);
-	auth_field_set(lctx, fields[2].iov_base, fields[2].iov_len, "user", userid, AUTH_HEXLEN);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "pass", fields[3].iov_base, fields[3].iov_len);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "serv", fields[4].iov_base, fields[4].iov_len);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "pkey",
+			fields[repl].iov_base, fields[repl].iov_len);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "mail",
+			fields[mail].iov_base, fields[mail].iov_len);
+	auth_field_set(lctx, fields[mail].iov_base,
+			fields[mail].iov_len, "user", userid, AUTH_HEXLEN);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "pass",
+			fields[pass].iov_base, fields[pass].iov_len);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "serv",
+			fields[serv].iov_base, fields[serv].iov_len);
 	auth_field_set(lctx, userid, AUTH_HEXLEN, "token", token.hextoken, AUTH_HEXLEN);
 	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
 	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "expires", &token.expires, sizeof token.expires);
