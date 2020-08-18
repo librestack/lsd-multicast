@@ -252,8 +252,6 @@ static void auth_op_user_add(lc_message_t *msg)
 		perror("auth_decode_packet()");
 		return;
 	}
-
-	/* TODO: validate things like email address */
 	if (!auth_valid_email(fields[mail].iov_base, fields[mail].iov_len)) {
 		ERROR("invalid email address");
 		return;
@@ -263,7 +261,6 @@ static void auth_op_user_add(lc_message_t *msg)
 	auth_create_user_token(&token, &p);
 
 	/* (3) create user record in db */
-
 	char pwhash[crypto_pwhash_STRBYTES];
 	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
 	char userid[AUTH_HEXLEN];
@@ -288,13 +285,13 @@ static void auth_op_user_add(lc_message_t *msg)
 			fields[mail].iov_base, fields[mail].iov_len);
 	auth_field_set(lctx, fields[mail].iov_base,
 			fields[mail].iov_len, "user", userid, AUTH_HEXLEN);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "pass",
-			fields[pass].iov_base, fields[pass].iov_len);
+	auth_field_set(lctx, userid, AUTH_HEXLEN, "pass", pwhash, sizeof pwhash);
 	auth_field_set(lctx, userid, AUTH_HEXLEN, "serv",
 			fields[serv].iov_base, fields[serv].iov_len);
 	auth_field_set(lctx, userid, AUTH_HEXLEN, "token", token.hextoken, AUTH_HEXLEN);
 	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
-	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "expires", &token.expires, sizeof token.expires);
+	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "expires",
+			&token.expires, sizeof token.expires);
 
 	/* TODO: logfile entry */
 	DEBUG("user created");
