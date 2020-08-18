@@ -174,7 +174,9 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 			0,
 			NULL);
 	memset(data, 0, sizeof data);
-	if (crypto_box_open_easy(data, outer[2].iov_base, outer[2].iov_len,
+	if (crypto_box_open_easy(data,
+				outer[fld_payload].iov_base,
+				outer[fld_payload].iov_len,
 				nonce, payload->senderkey, privatekey) != 0)
 	{
 		ERROR("packet decryption failed");
@@ -195,6 +197,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	{
 		return -1;
 	}
+	DEBUG("wire_unpack() fieldcount: %i", payload->fieldcount);
 	DEBUG("wire_unpack() done, dumping fields...");
 	for (int i = 1; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %zu bytes", i, payload->fields[i].iov_len);
