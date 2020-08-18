@@ -19,6 +19,8 @@
 /* TODO: from config */
 #define FROM "noreply@librecast.net"
 
+lc_ctx_t *lctx;
+
 void hash_field(unsigned char *hash, size_t hashlen,
 		const char *key, size_t keylen,
 		const char *fld, size_t fldlen)
@@ -28,6 +30,24 @@ void hash_field(unsigned char *hash, size_t hashlen,
 	crypto_generichash_update(&state, (unsigned char *)key, keylen);
 	crypto_generichash_update(&state, (unsigned char *)fld, fldlen);
 	crypto_generichash_final(&state, hash, hashlen);
+}
+
+int auth_init()
+{
+	lctx = lc_ctx_new();
+	handler_t *h = config.handlers;
+	if (h && h->dbpath) {
+		if (mkdir(h->dbpath, S_IRWXU) == -1 && errno != EEXIST) {
+			ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
+		}
+		lc_db_open(lctx, h->dbpath);
+	}
+	return 0;
+}
+
+void auth_free()
+{
+	lc_ctx_free(lctx);
 }
 
 int auth_field_get(lc_ctx_t *lctx, char *key, size_t keylen,
@@ -63,7 +83,13 @@ int auth_user_create(struct iovec *mail, struct iovec *pass)
 
 int auth_user_bymail(struct iovec *mail, struct iovec *userid)
 {
-	return 0;
+	void *vptr = NULL;
+        size_t vlen;
+	int i;
+
+	i = auth_field_get(lctx, mail->iov_base, mail->iov_len, "user", &vptr, &vlen);
+
+	return i;
 }
 
 /* minimal email verification - our smtp server will do the rest */
