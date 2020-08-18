@@ -89,6 +89,7 @@ int main()
 	data.iov_len = 3;
 	data.iov_base = malloc(data.iov_len);
 	memset(data.iov_base + 2, 0x80, 1);
+	errno = 0;
 	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == -1,
 			"use continuation bit to attempt read beyond end of data (EILSEQ)");
 	test_assert(errno == EILSEQ, "errno == EILSEQ");
@@ -106,6 +107,7 @@ int main()
 	data.iov_base = malloc(data.iov_len);
 	memset(data.iov_base + 2, htole64(2), 1); /* try to read one byte beyond end of data */
 	memset(data.iov_base + 3, 'a', 1);
+	errno = 0;
 	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == -1,
 			"use length to read beyond end of data (EBADMSG)");
 	test_assert(errno == EBADMSG, "errno == EBADMSG");

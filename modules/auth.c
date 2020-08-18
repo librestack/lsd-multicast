@@ -155,11 +155,14 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	payload->fieldcount = 5;
 	struct iovec iovs[payload->fieldcount];
 	payload->fields = iovs;
-	wire_unpack(&clearpkt,
+	if (wire_unpack(&clearpkt,
 			payload->fields,
 			payload->fieldcount,
 			&payload->opcode,
-			&payload->flags);
+			&payload->flags) == -1)
+	{
+		return -1;
+	}
 
 	DEBUG("wire_unpack() done, dumping fields...");
 	for (int i = 1; i < payload->fieldcount; i++) {
@@ -212,6 +215,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	memset(fields, 0, sizeof fields);
 	p.fields = fields;
 	if (auth_decode_packet(msg, &p) == -1) {
+		perror("auth_decode_packet()");
 		return;
 	}
 
