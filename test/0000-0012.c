@@ -71,6 +71,8 @@ void runtests()
 	lc_msg_init_data(&msg, pkt.iov_base, pkt.iov_len, NULL, NULL);
 
 	auth_payload_t p = {0};
+	struct iovec fields[1];
+	p.fields = fields;
 	test_assert(auth_decode_packet(&msg, &p) == 0, "auth_decode_packet()");
 
 	free(pkt.iov_base);
