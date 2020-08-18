@@ -187,7 +187,6 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	struct iovec clearpkt = {0};
 	clearpkt.iov_base = data;
 	clearpkt.iov_len = outer[fld_payload].iov_len - crypto_box_MACBYTES;
-	payload->fieldcount = 5;
 	if (wire_unpack(&clearpkt,
 			payload->fields,
 			payload->fieldcount,
@@ -241,6 +240,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	struct iovec fields[fieldcount] = {0};
 	auth_payload_t p = {0};
 	p.fields = fields;
+	p.fieldcount = fieldcount;
 	int state;
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL;
@@ -372,6 +372,7 @@ static void auth_op_auth_service(lc_message_t *msg)
 	struct iovec fields[fieldcount];
 	auth_payload_t p = {0};
 	p.fields = fields;
+	p.fieldcount = fieldcount;
 	int state;
 	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL;
