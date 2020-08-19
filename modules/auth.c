@@ -98,6 +98,7 @@ int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 		return -1;
 	}
 	if (!auth_user_bymail(mail, &user)) {
+		free(user.iov_base);
 		errno = EADDRINUSE;
 		return -1;
 	}
