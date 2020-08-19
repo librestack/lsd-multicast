@@ -23,17 +23,18 @@ struct handler_s {
 	unsigned short  port;
 };
 
+typedef struct config_s config_t;
 typedef struct module_s module_t;
+
 struct module_s {
 	char *          name;
 	void *          handle;
-	int (*		init)(void);
+	int (*		init)(config_t *c);
 	void (*		finit)(void);
 	void (*		handle_msg)(lc_message_t *msg);
 	void (*		handle_err)(int);
 };
 
-typedef struct config_s config_t;
 struct config_s {
 	int	daemon;
 	int	debug;

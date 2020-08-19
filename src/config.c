@@ -80,7 +80,7 @@ int config_modules_load(void)
 		else {
 			DEBUG("failed to load %s: '%s'", mod->name, dlerror());
 		}
-		if ((mod->init = dlsym(mod->handle, "init"))) mod->init();
+		if ((mod->init = dlsym(mod->handle, "init"))) mod->init(&config);
 		mod->finit = dlsym(mod->handle, "finit");
 		mod->handle_msg = dlsym(mod->handle, "handle_msg");
 		mod->handle_err = dlsym(mod->handle, "handle_err");

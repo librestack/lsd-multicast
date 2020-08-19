@@ -477,12 +477,10 @@ static void auth_op_auth_service(lc_message_t *msg)
 
 };
 
-void init(void)
+void init(config_t *c)
 {
 	TRACE("auth.so %s()", __func__);
-	config.loglevel = 127;
-	/* TODO: ensure config read */
-	config_include("./0000-0009.conf"); /* FIXME */
+	if (c) config = *c;
 	DEBUG("I am the very model of a modern auth module");
 	auth_init();
 }
