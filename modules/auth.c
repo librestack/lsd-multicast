@@ -93,6 +93,12 @@ int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 	if (!auth_valid_email(mail->iov_base, mail->iov_len))
 		return -1;
 
+	struct iovec user = {0};
+	if (!auth_user_bymail(mail, &user)) {
+		errno = EADDRINUSE;
+		return -1;
+	}
+
 	/* we don't do any strength checking on passwords here
 	 * save that for the UI where we can give proper feedback */
 	if (pass && !pass->iov_len) return -1;

@@ -47,7 +47,9 @@ int main()
 	free(u.iov_base);
 
 	memset(userid, 0, sizeof userid);
-	test_assert(auth_user_create(userid, &mail, NULL) == 0,
+	struct iovec mail2 = { .iov_base = "mail2@example.com" };
+	mail2.iov_len = strlen(mail2.iov_base);
+	test_assert(auth_user_create(userid, &mail2, NULL) == 0,
 			"auth_user_create() with NULL password");
 
 	auth_free();
