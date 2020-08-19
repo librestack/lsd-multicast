@@ -9,7 +9,11 @@
 int main()
 {
 	test_name("auth_user_create()");
+	char dbpath[] = "0000-0014.tmp.XXXXXX";
 	config_include("./0000-0014.conf");
+	auth_init();
+	test_assert(lc_db_open(lctx, mkdtemp(dbpath)) == 0, "lc_db_open() - open temp db");
+
 	struct iovec mail = { .iov_base = "mail@example.com" };
 	mail.iov_len = strlen(mail.iov_base);
 	struct iovec mail_invalid = { .iov_base = "@example.com" };
@@ -18,7 +22,6 @@ int main()
 	pass.iov_len = strlen(pass.iov_base);
 	struct iovec nopass = { .iov_base = "", .iov_len = 0 };
 
-	test_assert(auth_init() == 0, "auth_init()");
 
 	test_assert(auth_user_create(&mail, &pass) == 0,
 			"auth_user_create()");

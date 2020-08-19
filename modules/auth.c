@@ -32,7 +32,7 @@ void hash_field(unsigned char *hash, size_t hashlen,
 	crypto_generichash_final(&state, hash, hashlen);
 }
 
-int auth_init()
+lc_ctx_t *auth_init()
 {
 	lctx = lc_ctx_new();
 	handler_t *h = config.handlers;
@@ -42,7 +42,7 @@ int auth_init()
 		}
 		lc_db_open(lctx, h->dbpath);
 	}
-	return 0;
+	return lctx;
 }
 
 void auth_free()

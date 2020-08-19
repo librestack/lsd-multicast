@@ -87,7 +87,7 @@ extern lc_ctx_t *lctx;
 void hash_field(unsigned char *hash, size_t hashlen,
 		const char *key, size_t keylen,
 		const char *fld, size_t fldlen);
-int auth_init();
+lc_ctx_t *auth_init();
 void auth_free();
 int auth_field_get(char *key, size_t keylen, char *field, void *data, size_t *datalen);
 void auth_field_set(char *key, size_t keylen, const char *field, void *data, size_t datalen);
