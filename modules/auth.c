@@ -287,7 +287,7 @@ int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
 	struct iovec pwhash = {0};
 	struct iovec *pw = &pwhash;
 	struct iovec nopass = { .iov_base = "*", .iov_len = 1 };
-	if (!auth_field_getv(user->iov_base, user->iov_len, "pass", &pwhash))
+	if (auth_field_getv(user->iov_base, user->iov_len, "pass", &pwhash))
 	{
 		DEBUG("unable to find password for user");
 		pw = &nopass; /* preserve constant time */
@@ -326,21 +326,36 @@ int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 
 int auth_user_token_set(char *userid, auth_user_token_t *token)
 {
-	int i;
-	i = auth_field_set(token->hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
-	if (i) return -1;
-	i = auth_field_set(token->hextoken, AUTH_HEXLEN, "expires",
-			&token->expires, sizeof token->expires);
-	return i;
+	if (auth_field_set(token->hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN)) {
+		DEBUG ("error setting user token");
+		return -1;
+	}
+	if (auth_field_set(token->hextoken, AUTH_HEXLEN, "expires",
+			&token->expires, sizeof token->expires))
+	{
+		DEBUG ("error setting user token expiry");
+		return -1;
+	}
+	return 0;
 }
 
 int auth_user_token_use(struct iovec *token, struct iovec *pass)
 {
 	struct iovec user = {0};
 	struct iovec expires = {0};
-	//auth_field_getv(token->iov_base, token->iov_len, "user", &user);
-	//auth_field_getv(token->iov_base, token->iov_len, "expires", &expires);
-	/* verifiy token */
+	auth_user_token_t tok = {0};
+	if (auth_field_getv(token->iov_base, token->iov_len, "user", &user)) {
+		DEBUG ("user token not found");
+		return -1;
+	}
+	if (auth_field_getv(token->iov_base, token->iov_len, "expires", &expires)) {
+		DEBUG ("user token expiry not found");
+		return -1;
+	}
+	tok.expires = *((uint64_t *)expires.iov_base);
+	if (!auth_user_token_valid(&tok)) {
+		return -1;
+	}
 	/* set password */
 	/* delete token */
 	return 0;
