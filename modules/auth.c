@@ -343,17 +343,16 @@ unsigned char *auth_key_sign_sk_bin(unsigned char *binkey, char *combokey)
 int auth_serv_token_new(struct iovec *tok, struct iovec *serv)
 {
 	unsigned char sk[crypto_sign_SECRETKEYBYTES] = {0};
-	auth_key_sign_sk_bin(sk, config.handlers->key_private);
 	struct iovec caps = { .iov_base = "0", .iov_len = 1 };
 	unsigned char *cap_sig = malloc(crypto_sign_BYTES + caps.iov_len);
 	unsigned long long tok_len = 0;
+	auth_key_sign_sk_bin(sk, config.handlers->key_private);
 	if (crypto_sign(cap_sig, &tok_len, caps.iov_base, caps.iov_len, sk)) {
 		ERROR("crypto_sign() failed");
+		free(cap_sig);
+		errno = EIO;
+		return -1;
 	}
-	else {
-		DEBUG("crypto_sign() succeeded");
-	}
-
 	if (tok_len > SIZE_MAX) {
 		ERROR("signed token too long");
 		free(cap_sig);
@@ -362,9 +361,6 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *serv)
 	}
 	tok->iov_base = cap_sig;
 	tok->iov_len = (size_t)tok_len;
-
-	DEBUG("tok->iov_len = %zu", tok->iov_len);
-
 	return 0;
 }
 
