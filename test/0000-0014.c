@@ -51,7 +51,12 @@ int main()
 	test_expectiov(&mail, &u);
 	free(u.iov_base);
 
-	/* TODO: token, token expiry etc. */
+	test_assert(auth_field_getv(userid, AUTH_HEXLEN, "pass", &u) == 0,
+			"auth_field_getv() - fetch pass for user");
+	test_assert(u.iov_len == crypto_pwhash_STRBYTES, "password length");
+	free(u.iov_base);
+
+	/* TODO: pubkey, token, token expiry etc. */
 
 	auth_free();
 
