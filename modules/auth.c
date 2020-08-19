@@ -109,13 +109,10 @@ int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 
 int auth_user_bymail(struct iovec *mail, struct iovec *userid)
 {
-	void *vptr = NULL;
-	size_t vlen;
-	int i;
-
-	i = auth_field_get(mail->iov_base, mail->iov_len, "user", &vptr, &vlen);
-
-	return i;
+	DEBUG("searching for mail: %.*s", (int)mail->iov_len, (char *)mail->iov_base);
+	return auth_field_get(mail->iov_base, mail->iov_len, "user",
+			&userid->iov_base,
+			&userid->iov_len);
 }
 
 /* minimal email verification - our smtp server will do the rest */

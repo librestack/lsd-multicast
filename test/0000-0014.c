@@ -34,13 +34,17 @@ int main()
 
 	/* try to fetch invalid mail address */
 	struct iovec u = {0};
+
 	test_assert(auth_user_bymail(&mail_invalid, &u) == -1,
 			"auth_mail_bymail() - user not found");
 	test_assert(errno == LC_ERROR_DB_KEYNOTFOUND,
 			"auth_mail_bymail() not found - LC_ERROR_DB_KEYNOTFOUND");
+	free(u.iov_base);
+
 	test_assert(auth_user_bymail(&mail, &u) == 0,
 			"auth_mail_bymail() - user found");
 	test_expectiov(&mail, &u);
+	free(u.iov_base);
 
 	auth_free();
 
