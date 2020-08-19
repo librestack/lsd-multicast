@@ -307,6 +307,11 @@ int auth_user_token_set(char *userid, auth_user_token_t *token)
 	return i;
 }
 
+int auth_user_token_use(struct iovec *token, struct iovec *pass)
+{
+	return 0;
+}
+
 int auth_user_token_valid(auth_user_token_t *token)
 {
 	return (be64toh(token->expires) <= time(NULL) + 60 * 15);
