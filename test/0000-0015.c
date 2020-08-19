@@ -29,7 +29,7 @@ int main()
 	auth_user_token_new(&token, &payload);
 	auth_user_token_set(userid, &token);
 
-	/* TODO: try login before using token  */
+	/* TODO: try login before using token (EACCES) */
 
 	/* user returns with token, set password */
 	struct iovec tok = { .iov_base = token.hextoken };
@@ -38,7 +38,15 @@ int main()
 	pass.iov_len = strlen(pass.iov_base);
 	test_assert(auth_user_token_use(&tok, &pass) == 0, "auth_user_token_use()");
 
-	/* TODO: try login */
+	/* TODO: try login (OK) */
+
+	/* TODO: try login with wrong password (EACCES) */
+
+	/* TODO: try invalid login email (EKEYREJECTED) */
+
+	/* TODO: try expired token (EKEYEXPIRED) */
+
+	/* TODO: create user with same mail address (EADDRINUSE) */
 
 	auth_free();
 	config_free();
