@@ -77,7 +77,8 @@ void test_expectiov(struct iovec *expected, struct iovec *got)
 			(int)expected->iov_len, (char *)expected->iov_base,
 			expected->iov_len, got->iov_len);
 	if (expected->iov_len != got->iov_len) return;
-	test_strcmp(expected->iov_base, got->iov_base, "expected: '%.*s', got: '%.*s'",
+	test_strncmp(expected->iov_base, got->iov_base, expected->iov_len,
+			"expected: '%.*s', got: '%.*s'",
 			(int)expected->iov_len, (char *)expected->iov_base,
 			(int)got->iov_len, (char *)got->iov_base);
 }
