@@ -43,7 +43,7 @@ int main()
 
 	test_assert(auth_user_bymail(&mail, &u) == 0,
 			"auth_mail_bymail() - user found");
-	test_expectiov(&mail, &u);
+	test_expectn(userid, u.iov_base, u.iov_len);
 	free(u.iov_base);
 
 	auth_free();
