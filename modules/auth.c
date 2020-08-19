@@ -76,12 +76,14 @@ int auth_field_set(char *key, size_t keylen, const char *field, void *data, size
 
 int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 {
+	struct iovec nopass = {0};
 	if (!auth_valid_email(mail->iov_base, mail->iov_len))
 		return -1;
 
 	/* we don't do any strength checking on passwords here
 	 * save that for the UI where we can give proper feedback */
-	if (!pass->iov_len) return -1;
+	if (pass && !pass->iov_len) return -1;
+	if (!pass) pass = &nopass;
 
 	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
 	char pwhash[crypto_pwhash_STRBYTES];

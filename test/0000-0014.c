@@ -45,6 +45,11 @@ int main()
 			"auth_field_getv() - fetch pass for user");
 	test_assert(u.iov_len == crypto_pwhash_STRBYTES, "password length");
 	free(u.iov_base);
+
+	memset(userid, 0, sizeof userid);
+	test_assert(auth_user_create(userid, &mail, NULL) == 0,
+			"auth_user_create() with NULL password");
+
 	auth_free();
 	config_free();
 	return fails;
