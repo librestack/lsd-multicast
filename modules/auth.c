@@ -328,7 +328,6 @@ static void auth_op_user_add(lc_message_t *msg)
 	};
 	struct iovec fields[fieldcount] = {0};
 	auth_payload_t p = { .fields = fields, .fieldcount = fieldcount };
-	int state;
 	lc_socket_t *sock = NULL;
 	lc_channel_t *chan = NULL;
 	lc_message_t response = {0};
@@ -344,30 +343,19 @@ static void auth_op_user_add(lc_message_t *msg)
 		return;
 	}
 
-	/* (3) create user record in db */
 	char userid[AUTH_HEXLEN];
-	
-	//pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
-#if 0
-	auth_field_set(userid, AUTH_HEXLEN, "pass", pwhash, sizeof pwhash);
-	auth_field_set(token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
-	auth_field_set(token.hextoken, AUTH_HEXLEN, "expires",
-			&token.expires, sizeof token.expires);
-#endif
 	auth_user_create(userid, &fields[mail], &fields[pass]);
-
 	auth_user_token_t token;
 	auth_user_token_new(&token, &p);
-	//auth_user_token_set(userid, &token);
-
-
-	/* TODO: logfile entry */
+	auth_user_token_set(userid, &token);
 	DEBUG("user created");
 
-	/* (4) email token */
+	/* TODO: logfile entry */
+
+
 	DEBUG("emailing token");
 	if (!config.testmode) {
-		char *to = strndup(fields[2].iov_base, fields[2].iov_len);
+		char *to = strndup(fields[mail].iov_base, fields[mail].iov_len);
 		char subject[] = "Librecast Live - Confirm Your Email Address";
 		if (auth_mail_token(subject, to, token.hextoken) == -1) {
 			ERROR("error in auth_mail_token()");
@@ -378,7 +366,6 @@ static void auth_op_user_add(lc_message_t *msg)
 		free(to);
 	}
 
-	/* (5) reply to reply address */
 	DEBUG("response to requestor");
 	sock = lc_socket_new(lctx);
 	chan = lc_channel_nnew(lctx, p.senderkey, crypto_box_PUBLICKEYBYTES);
@@ -390,7 +377,6 @@ static void auth_op_user_add(lc_message_t *msg)
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
 	lc_msg_free(&response);
-	//pthread_setcancelstate(state, NULL);
 };
 
 static void auth_op_user_delete(lc_message_t *msg)
@@ -496,7 +482,7 @@ void init(void)
 	TRACE("auth.so %s()", __func__);
 	config.loglevel = 127;
 	/* TODO: ensure config read */
-	//config_include("./0000-0009.conf"); /* FIXME */
+	config_include("./0000-0009.conf"); /* FIXME */
 	DEBUG("I am the very model of a modern auth module");
 	auth_init();
 }
