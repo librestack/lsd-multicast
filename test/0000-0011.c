@@ -5,6 +5,7 @@
 #include "../modules/auth.h"
 #include "../src/config.h"
 #include <librecast.h>
+#include <time.h>
 #include <unistd.h>
 
 int main()
@@ -31,8 +32,14 @@ int main()
 	test_log("auth handler token : %s", hextoken);
 	test_expect(hextoken, tok.hextoken);
 
-	/* TODO: check 14min < expiry < 15min */
-
+	/* check 14min < expiry < 15min */
+	time_t now = time(NULL);
+	time_t expires = be64toh(tok.expires);
+	test_assert(expires > now + 60 * 14, "expiry > 14min");
+	test_assert(expires <= now + 60 * 15, "expiry <= 15min");
+	test_log("now; %llu", now);
+	test_log("exp; %llu", expires);
+	test_log("dif; %llu", expires - now);
 
 	/* make up a userid */
 	char userid[AUTH_HEXLEN];

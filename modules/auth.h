@@ -91,7 +91,7 @@ lc_ctx_t *auth_init();
 void auth_free();
 int auth_field_get(char *key, size_t keylen, char *field, void *data, size_t *datalen);
 int auth_field_getv(char *key, size_t keylen, char *field, struct iovec *data);
-void auth_field_set(char *key, size_t keylen, const char *field, void *data, size_t datalen);
+int auth_field_set(char *key, size_t keylen, const char *field, void *data, size_t datalen);
 int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass);
 int auth_user_bymail(struct iovec *mail, struct iovec *userid);
 int auth_valid_email(char *mail, size_t len);

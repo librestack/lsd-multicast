@@ -67,11 +67,11 @@ int auth_field_getv(char *key, size_t keylen, char *field, struct iovec *data)
 	return auth_field_get(key, keylen, field, &data->iov_base, &data->iov_len);
 }
 
-void auth_field_set(char *key, size_t keylen, const char *field, void *data, size_t datalen)
+int auth_field_set(char *key, size_t keylen, const char *field, void *data, size_t datalen)
 {
 	unsigned char hash[crypto_generichash_BYTES];
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
-	lc_db_set(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
+	return lc_db_set(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
 }
 
 int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
@@ -297,10 +297,12 @@ int auth_create_token_new(auth_user_token_t *token, auth_payload_t *payload)
 
 int auth_user_token_set(char *userid, auth_user_token_t *token)
 {
-	auth_field_set(token->hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
-	auth_field_set(token->hextoken, AUTH_HEXLEN, "expires",
+	int i;
+	i = auth_field_set(token->hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
+	if (i) return -1;
+	i = auth_field_set(token->hextoken, AUTH_HEXLEN, "expires",
 			&token->expires, sizeof token->expires);
-	return 0;
+	return i;
 }
 
 static void auth_op_noop(lc_message_t *msg)
