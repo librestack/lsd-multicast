@@ -314,6 +314,11 @@ int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
 	return ret;
 }
 
+int auth_serv_token_new(struct iovec *tok, struct iovec *serv)
+{
+	return 0;
+}
+
 int auth_serv_token_get(struct iovec *tok, struct iovec *user, struct iovec *pass, struct iovec *serv)
 {
 	/* TODO: create token with:

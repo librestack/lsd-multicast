@@ -75,7 +75,6 @@ int main()
 
 	/* TODO: try expired token (EKEYEXPIRED) */
 
-	/* TODO: create user with same mail address (EADDRINUSE) */
 	test_assert(auth_user_create(userid, &mail, NULL) == -1,
 			"can't create two users with same email");
 	test_assert(errno == EADDRINUSE, "duplicate email (EADDRINUSE)");

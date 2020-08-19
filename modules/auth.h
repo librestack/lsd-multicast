@@ -95,6 +95,7 @@ int auth_field_set(char *key, size_t keylen, const char *field, void *data, size
 int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass);
 int auth_user_bymail(struct iovec *mail, struct iovec *userid);
 int auth_valid_email(char *mail, size_t len);
+int auth_serv_token_new(struct iovec *tok, struct iovec *serv);
 int auth_serv_token_get(struct iovec *tok, struct iovec *user, struct iovec *pass, struct iovec *serv);
 int auth_user_pass_verify(struct iovec *user, struct iovec *pass);
 int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload);
