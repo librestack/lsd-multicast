@@ -10,7 +10,7 @@
 
 int main()
 {
-	test_name("auth_create_token_new()");
+	test_name("auth_user_token_new()");
 	char dbpath[] = "0000-0011.tmp.XXXXXX";
 	config_include("./0000-0011.conf");
 	auth_init();
@@ -23,8 +23,8 @@ int main()
 	auth_payload_t payload;
 
 	payload.senderkey = (unsigned char *)config.handlers->key_public;
-	test_assert(auth_create_token_new(&tok, &payload) == 0,
-			"auth_create_token_new()");
+	test_assert(auth_user_token_new(&tok, &payload) == 0,
+			"auth_user_token_new()");
 	memcpy(seed, config.handlers->key_public, randombytes_SEEDBYTES);
 	randombytes_buf_deterministic(token, sizeof token, seed);
 	sodium_bin2hex(hextoken, sizeof hextoken, token, sizeof token);

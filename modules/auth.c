@@ -280,10 +280,10 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	return 0;
 }
 
-int auth_create_token_new(auth_user_token_t *token, auth_payload_t *payload)
+int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 {
 	if (config.testmode) {
-		DEBUG("auth_create_user_token(): test mode enabled");
+		DEBUG("auth_user_token_new(): test mode enabled");
 		unsigned char seed[randombytes_SEEDBYTES];
 		memcpy(seed, payload->senderkey, randombytes_SEEDBYTES);
 		randombytes_buf_deterministic(token->token, sizeof token->token, seed);
@@ -357,7 +357,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	auth_user_create(userid, &fields[mail], &fields[pass]);
 
 	auth_user_token_t token;
-	auth_create_token_new(&token, &p);
+	auth_user_token_new(&token, &p);
 	//auth_user_token_set(userid, &token);
 
 
