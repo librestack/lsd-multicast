@@ -89,11 +89,14 @@ int auth_user_pass_set(char *userid, struct iovec *pass)
 
 int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 {
+	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
 	struct iovec nopass = {0};
-	if (!auth_valid_email(mail->iov_base, mail->iov_len))
-		return -1;
-
 	struct iovec user = {0};
+
+	if (!auth_valid_email(mail->iov_base, mail->iov_len)) {
+		errno = EINVAL;
+		return -1;
+	}
 	if (!auth_user_bymail(mail, &user)) {
 		errno = EADDRINUSE;
 		return -1;
@@ -104,7 +107,6 @@ int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 	if (pass && !pass->iov_len) return -1;
 	if (!pass) pass = &nopass;
 
-	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
 	randombytes_buf(userid_bytes, sizeof userid_bytes);
 	sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
 	DEBUG("userid created: %s", userid);

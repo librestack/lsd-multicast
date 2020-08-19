@@ -26,6 +26,7 @@ int main()
 			"auth_user_create()");
 	test_assert(auth_user_create(NULL, &mail_invalid, &pass) == -1,
 			"auth_user_create() - invalid email");
+	test_assert(errno == EINVAL, "invalid email (EINVAL)");
 	test_assert(auth_user_create(NULL, &mail, &nopass) == -1,
 			"auth_user_create() - no password");
 	test_assert(auth_user_bymail(&mail_invalid, &u) == -1,
