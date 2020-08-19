@@ -50,17 +50,20 @@ void auth_free()
 	lc_ctx_free(lctx);
 }
 
-int auth_field_get(lc_ctx_t *lctx, char *key, size_t keylen,
+int auth_field_get(char *key, size_t keylen,
 		char *field, void *data, size_t *datalen)
 {
 	int ret = 0;
 	unsigned char hash[crypto_generichash_BYTES] = "";
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
-	ret = lc_db_get(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
+	if ((ret = lc_db_get(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen))) {
+		errno = ret;
+		ret = -1;
+	}
 	return ret;
 }
 
-void auth_field_set(lc_ctx_t *lctx, char *key, size_t keylen,
+void auth_field_set(char *key, size_t keylen,
 		const char *field, void *data, size_t datalen)
 {
 	unsigned char hash[crypto_generichash_BYTES];
@@ -84,10 +87,10 @@ int auth_user_create(struct iovec *mail, struct iovec *pass)
 int auth_user_bymail(struct iovec *mail, struct iovec *userid)
 {
 	void *vptr = NULL;
-        size_t vlen;
+	size_t vlen;
 	int i;
 
-	i = auth_field_get(lctx, mail->iov_base, mail->iov_len, "user", &vptr, &vlen);
+	i = auth_field_get(mail->iov_base, mail->iov_len, "user", &vptr, &vlen);
 
 	return i;
 }
@@ -288,11 +291,9 @@ static void auth_op_user_add(lc_message_t *msg)
 	struct iovec fields[fieldcount] = {0};
 	auth_payload_t p = { .fields = fields, .fieldcount = fieldcount };
 	int state;
-	lc_ctx_t *lctx = NULL;
 	lc_socket_t *sock = NULL;
 	lc_channel_t *chan = NULL;
 	lc_message_t response = {0};
-	handler_t *h = config.handlers;
 
 	/* FIXME: must have keys to continue */
 
@@ -322,23 +323,19 @@ static void auth_op_user_add(lc_message_t *msg)
 		ERROR("crypto_pwhash() error");
 	}
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
-	lctx = lc_ctx_new();
-	if (mkdir(h->dbpath, S_IRWXU) == -1 && errno != EEXIST) {
-		ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
-	}
-	lc_db_open(lctx, h->dbpath);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "pkey",
+	auth_init();
+	auth_field_set(userid, AUTH_HEXLEN, "pkey",
 			fields[repl].iov_base, fields[repl].iov_len);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "mail",
+	auth_field_set(userid, AUTH_HEXLEN, "mail",
 			fields[mail].iov_base, fields[mail].iov_len);
-	auth_field_set(lctx, fields[mail].iov_base,
+	auth_field_set(fields[mail].iov_base,
 			fields[mail].iov_len, "user", userid, AUTH_HEXLEN);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "pass", pwhash, sizeof pwhash);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "serv",
+	auth_field_set(userid, AUTH_HEXLEN, "pass", pwhash, sizeof pwhash);
+	auth_field_set(userid, AUTH_HEXLEN, "serv",
 			fields[serv].iov_base, fields[serv].iov_len);
-	auth_field_set(lctx, userid, AUTH_HEXLEN, "token", token.hextoken, AUTH_HEXLEN);
-	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
-	auth_field_set(lctx, token.hextoken, AUTH_HEXLEN, "expires",
+	auth_field_set(userid, AUTH_HEXLEN, "token", token.hextoken, AUTH_HEXLEN);
+	auth_field_set(token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
+	auth_field_set(token.hextoken, AUTH_HEXLEN, "expires",
 			&token.expires, sizeof token.expires);
 
 	/* TODO: logfile entry */
@@ -370,7 +367,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
 	lc_msg_free(&response);
-	lc_ctx_free(lctx);
+	auth_free();
 	pthread_setcancelstate(state, NULL);
 };
 
@@ -420,10 +417,9 @@ static void auth_op_auth_service(lc_message_t *msg)
 	p.fields = fields;
 	p.fieldcount = fieldcount;
 	int state;
-	lc_ctx_t *lctx = NULL;
-	lc_socket_t *sock = NULL;
-	lc_channel_t *chan = NULL;
-	lc_message_t response = {0};
+	//lc_socket_t *sock = NULL;
+	//lc_channel_t *chan = NULL;
+	//lc_message_t response = {0};
 	handler_t *h = config.handlers;
 
 	/* FIXME: must have keys to continue */
@@ -444,19 +440,17 @@ static void auth_op_auth_service(lc_message_t *msg)
 	}
 #endif
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
-	lctx = lc_ctx_new();
 	if (mkdir(h->dbpath, S_IRWXU) == -1 && errno != EEXIST) {
 		ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
 	}
 
-	lc_db_open(lctx, h->dbpath);
-	unsigned char hash[AUTH_HEXLEN] = "";
+
+	//unsigned char hash[AUTH_HEXLEN] = "";
 	void *vptr = NULL;
 	size_t vlen;
-	int ret;
 
 	/* find userid for email */
-	if (auth_field_get(lctx, fields[mail].iov_base, fields[mail].iov_len, "user", &vptr, &vlen)) {
+	if (auth_field_get(fields[mail].iov_base, fields[mail].iov_len, "user", &vptr, &vlen)) {
 		ERROR("invalid mail");
 	}
 	else {
@@ -471,7 +465,6 @@ static void auth_op_auth_service(lc_message_t *msg)
 	/* TODO: logfile entry */
 	/* TODO: reply to reply address */
 
-	lc_ctx_free(lctx);
 	pthread_setcancelstate(state, NULL);
 
 };
@@ -481,14 +474,16 @@ void init(void)
 	TRACE("auth.so %s()", __func__);
 	config.loglevel = 127;
 	/* TODO: ensure config read */
-	config_include("./0000-0009.conf"); /* FIXME */
+	//config_include("./0000-0009.conf"); /* FIXME */
 	DEBUG("I am the very model of a modern auth module");
+	auth_init();
 }
 
 void finit(void)
 {
 	TRACE("auth.so %s()", __func__);
 	config_free();
+	auth_free();
 }
 
 void handle_msg(lc_message_t *msg)
