@@ -337,12 +337,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	
 	//pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
 #if 0
-	auth_field_set(userid, AUTH_HEXLEN, "pkey",
-			fields[repl].iov_base, fields[repl].iov_len);
 	auth_field_set(userid, AUTH_HEXLEN, "pass", pwhash, sizeof pwhash);
-	auth_field_set(userid, AUTH_HEXLEN, "serv",
-			fields[serv].iov_base, fields[serv].iov_len);
-	auth_field_set(userid, AUTH_HEXLEN, "token", token.hextoken, AUTH_HEXLEN);
 	auth_field_set(token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
 	auth_field_set(token.hextoken, AUTH_HEXLEN, "expires",
 			&token.expires, sizeof token.expires);
