@@ -4,12 +4,16 @@
 #include "test.h"
 #include "../modules/auth.h"
 #include "../src/config.h"
+#include <librecast.h>
 #include <unistd.h>
 
 int main()
 {
 	test_name("auth_create_token_new()");
+	char dbpath[] = "0000-0011.tmp.XXXXXX";
 	config_include("./0000-0011.conf");
+	auth_init();
+	test_assert(lc_db_open(lctx, mkdtemp(dbpath)) == 0, "lc_db_open() - open temp db");
 
 	unsigned char token[crypto_box_PUBLICKEYBYTES];
 	unsigned char seed[randombytes_SEEDBYTES];
@@ -29,6 +33,18 @@ int main()
 
 	/* TODO: check 14min < expiry < 15min */
 
+
+	/* make up a userid */
+	char userid[AUTH_HEXLEN];
+	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
+	randombytes_buf(userid_bytes, sizeof userid_bytes);
+	sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
+
+	test_assert(auth_user_token_set(userid, &tok) == 0,
+			"auth_user_token_set()");
+
+
+	auth_free();
 	config_free();
 	return fails;
 }

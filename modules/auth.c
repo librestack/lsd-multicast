@@ -295,6 +295,14 @@ int auth_create_token_new(auth_user_token_t *token, auth_payload_t *payload)
 	return 0;
 }
 
+int auth_user_token_set(char *userid, auth_user_token_t *token)
+{
+	auth_field_set(token->hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
+	auth_field_set(token->hextoken, AUTH_HEXLEN, "expires",
+			&token->expires, sizeof token->expires);
+	return 0;
+}
+
 static void auth_op_noop(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
@@ -329,9 +337,6 @@ static void auth_op_user_add(lc_message_t *msg)
 		return;
 	}
 
-	auth_user_token_t token;
-	auth_create_token_new(&token, &p);
-
 	/* (3) create user record in db */
 	char userid[AUTH_HEXLEN];
 	
@@ -344,6 +349,8 @@ static void auth_op_user_add(lc_message_t *msg)
 #endif
 	auth_user_create(userid, &fields[mail], &fields[pass]);
 
+	auth_user_token_t token;
+	auth_create_token_new(&token, &p);
 	//auth_user_token_set(userid, &token);
 
 
