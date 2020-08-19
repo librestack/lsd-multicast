@@ -340,14 +340,22 @@ unsigned char *auth_key_sign_sk_bin(unsigned char *binkey, char *combokey)
 	return binkey;
 }
 
-int auth_serv_token_new(struct iovec *tok, struct iovec *serv)
+int auth_serv_token_new(struct iovec *tok, struct iovec *clientkey, struct iovec *serv)
 {
 	unsigned char sk[crypto_sign_SECRETKEYBYTES] = {0};
-	struct iovec caps = { .iov_base = "0", .iov_len = 1 };
-	unsigned char *cap_sig = malloc(crypto_sign_BYTES + caps.iov_len);
 	unsigned long long tok_len = 0;
+	unsigned char *cap_sig;
+	struct iovec data;
+	struct iovec *caps[] = { clientkey, serv };
+	const int iov_count = sizeof caps / sizeof caps[0];
+	uint8_t op = 0x1;
+	uint8_t flags = 0x7;
+	wire_pack(&data, caps, iov_count, op, flags);
+
+
+	cap_sig = malloc(crypto_sign_BYTES + data.iov_len);
 	auth_key_sign_sk_bin(sk, config.handlers->key_private);
-	if (crypto_sign(cap_sig, &tok_len, caps.iov_base, caps.iov_len, sk)) {
+	if (crypto_sign(cap_sig, &tok_len, data.iov_base, data.iov_len, sk)) {
 		ERROR("crypto_sign() failed");
 		free(cap_sig);
 		errno = EIO;
@@ -361,6 +369,7 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *serv)
 	}
 	tok->iov_base = cap_sig;
 	tok->iov_len = (size_t)tok_len;
+	free(data.iov_base);
 	return 0;
 }
 

@@ -18,9 +18,10 @@ int main()
 
 	/* create new cap token */
 	struct iovec cap_sig = {0}; /* signed token */
-	//struct iovec serv = { .iov_base = "service" };
-	//serv.iov_len = strlen(serv.iov_base);
-	test_assert(auth_serv_token_new(&cap_sig, NULL) == 0,
+	struct iovec clientkey = { .iov_base = "wibble" }; /* TODO */
+	struct iovec serv = { .iov_base = "service" };
+	serv.iov_len = strlen(serv.iov_base);
+	test_assert(auth_serv_token_new(&cap_sig, &clientkey, &serv) == 0,
 			"auth_serv_token_new()");
 	test_log("cap_sig.iov_len = %zu", cap_sig.iov_len);
 
@@ -37,8 +38,7 @@ int main()
 		cap_sig.iov_base, cap_sig.iov_len, pk) == 0,
 			"verified cap signature");
 
-	test_log("cap_len: %llu", cap_len);
-	test_assert(cap_len == 1, "cap_len == %llu, expected 1", cap_len);
+	/* TODO: wire_unpack() */
 
 	/* TODO: check senderkey */
 	/* TODO: check service */
@@ -46,7 +46,6 @@ int main()
 
 	free(cap);
 	free(cap_sig.iov_base);
-
 	auth_free();
 	config_free();
 	return fails;
