@@ -314,8 +314,57 @@ int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
 	return ret;
 }
 
+char *auth_key_sign_pk_hex(char *combokey)
+{
+	return combokey + crypto_box_PUBLICKEYBYTES * 2;
+}
+
+char *auth_key_sign_sk_hex(char *combokey)
+{
+	return combokey + crypto_box_SECRETKEYBYTES * 2;
+}
+
+unsigned char *auth_key_sign_pk_bin(unsigned char *binkey, char *combokey)
+{
+	sodium_hex2bin(binkey, crypto_sign_PUBLICKEYBYTES,
+		auth_key_sign_pk_hex(combokey),
+		crypto_sign_PUBLICKEYBYTES * 2, NULL, 0, NULL);
+	return binkey;
+}
+
+unsigned char *auth_key_sign_sk_bin(unsigned char *binkey, char *combokey)
+{
+	sodium_hex2bin(binkey, crypto_sign_SECRETKEYBYTES,
+		auth_key_sign_sk_hex(combokey),
+		crypto_sign_SECRETKEYBYTES * 2, NULL, 0, NULL);
+	return binkey;
+}
+
 int auth_serv_token_new(struct iovec *tok, struct iovec *serv)
 {
+	unsigned char sk[crypto_sign_SECRETKEYBYTES] = {0};
+	auth_key_sign_sk_bin(sk, config.handlers->key_private);
+	struct iovec caps = { .iov_base = "0", .iov_len = 1 };
+	unsigned char *cap_sig = malloc(crypto_sign_BYTES + caps.iov_len);
+	unsigned long long tok_len = 0;
+	if (crypto_sign(cap_sig, &tok_len, caps.iov_base, caps.iov_len, sk)) {
+		ERROR("crypto_sign() failed");
+	}
+	else {
+		DEBUG("crypto_sign() succeeded");
+	}
+
+	if (tok_len > SIZE_MAX) {
+		ERROR("signed token too long");
+		free(cap_sig);
+		errno = EFBIG;
+		return -1;
+	}
+	tok->iov_base = cap_sig;
+	tok->iov_len = (size_t)tok_len;
+
+	DEBUG("tok->iov_len = %zu", tok->iov_len);
+
 	return 0;
 }
 

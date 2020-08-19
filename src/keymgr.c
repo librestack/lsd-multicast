@@ -6,24 +6,33 @@
 
 int main(int argc, char **argv)
 {
-	unsigned char pk[crypto_box_PUBLICKEYBYTES];
-	unsigned char sk[crypto_box_SECRETKEYBYTES];
-	const size_t pkhexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
-	const size_t skhexlen = crypto_box_SECRETKEYBYTES * 2 + 1;
-	char pkhex[pkhexlen];
-	char skhex[skhexlen];
+	unsigned char pk_sign[crypto_sign_PUBLICKEYBYTES];
+	unsigned char sk_sign[crypto_sign_SECRETKEYBYTES];
+	unsigned char pk_box[crypto_box_PUBLICKEYBYTES];
+	unsigned char sk_box[crypto_box_SECRETKEYBYTES];
+	const size_t pk_signhexlen = crypto_sign_PUBLICKEYBYTES * 2 + 1;
+	const size_t sk_signhexlen = crypto_sign_SECRETKEYBYTES * 2 + 1;
+	const size_t pk_boxhexlen = crypto_box_PUBLICKEYBYTES * 2 + 1;
+	const size_t sk_boxhexlen = crypto_box_SECRETKEYBYTES * 2 + 1;
+	char pk_signhex[pk_signhexlen];
+	char sk_signhex[sk_signhexlen];
+	char pk_boxhex[pk_boxhexlen];
+	char sk_boxhex[sk_boxhexlen];
 
 	if (sodium_init() == -1) {
 		return 1;
 	}
-	printf("generating keypair... ");
-	crypto_box_keypair(pk, sk);
+	printf("generating keypairs... ");
+	crypto_box_keypair(pk_box, sk_box);
+	crypto_sign_keypair(pk_sign, sk_sign);
 	printf("done\n");
 
-	sodium_bin2hex(pkhex, pkhexlen, pk, crypto_box_PUBLICKEYBYTES);
-	sodium_bin2hex(skhex, skhexlen, sk, crypto_box_SECRETKEYBYTES);
-	printf("public key: %s\n", pkhex);
-	printf("secret key: %s\n", skhex);
+	sodium_bin2hex(pk_signhex, pk_signhexlen, pk_sign, crypto_sign_PUBLICKEYBYTES);
+	sodium_bin2hex(sk_signhex, sk_signhexlen, sk_sign, crypto_sign_SECRETKEYBYTES);
+	sodium_bin2hex(pk_boxhex, pk_boxhexlen, pk_box, crypto_box_PUBLICKEYBYTES);
+	sodium_bin2hex(sk_boxhex, sk_boxhexlen, sk_box, crypto_box_SECRETKEYBYTES);
+	printf("key_pub		%s%s\n", pk_boxhex, pk_signhex);
+	printf("key_priv	%s%s\n", sk_boxhex, sk_signhex);
 
 	return 0;
 }
