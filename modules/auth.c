@@ -283,6 +283,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 
 int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
 {
+	int ret = 0;
 	struct iovec pwhash = {0};
 	struct iovec *pw = &pwhash;
 	struct iovec nopass = { .iov_base = "*", .iov_len = 1 };
@@ -298,9 +299,10 @@ int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
 	if (crypto_pwhash_str_verify(pw->iov_base, pass->iov_base, pass->iov_len) != 0) {
 		DEBUG("password verification failed");
 		errno = EACCES;
-		return -1;
+		ret = -1;
 	}
-	return 0;
+	free(pwhash.iov_base);
+	return ret;
 }
 
 int auth_serv_token_get(struct iovec *tok, struct iovec *user, struct iovec *pass, struct iovec *serv)
@@ -354,6 +356,7 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 		return -1;
 	}
 	tok.expires = *((uint64_t *)expires.iov_base);
+	free(expires.iov_base);
 	if (!auth_user_token_valid(&tok)) {
 		return -1;
 	}
@@ -361,6 +364,7 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	if (auth_user_pass_set(userid, pass))
 		ret = -1;
 	free(userid);
+	free(user.iov_base);
 
 	/* TODO: delete token */
 
