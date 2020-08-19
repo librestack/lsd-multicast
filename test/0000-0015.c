@@ -53,10 +53,15 @@ int main()
 			"auth_user_pass_verify() OK");
 
 	test_log("BAD password");
-	struct iovec badpass = { .iov_base = "wrong" };
-	badpass.iov_len = strlen(badpass.iov_base);
-	test_assert(auth_user_pass_verify(&user, &badpass) == -1,
+	struct iovec bad = { .iov_base = "wrong" };
+	bad.iov_len = strlen(bad.iov_base);
+	test_assert(auth_user_pass_verify(&user, &bad) == -1,
 			"auth_user_pass_verify() bad password");
+
+	test_log("GOOD password, BAD userid");
+	test_assert(auth_user_pass_verify(&bad, &pass) == -1,
+			"auth_user_pass_verify() - GOOD password, BAD user");
+
 
 	/* TODO: try login (OK) */
 	struct iovec captoken = {0};
@@ -65,8 +70,6 @@ int main()
 	auth_serv_token_get(&captoken, &user, &pass, &serv);
 
 	/* TODO: verify service token (crypto signature, has my pub key, expiry) */
-
-	/* TODO: try login with wrong password (EACCES) */
 
 	/* TODO: try invalid login email (EKEYREJECTED) */
 
