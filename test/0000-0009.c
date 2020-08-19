@@ -152,8 +152,8 @@ int main()
 	if (pid)
 		runtests(pid);
 	else {
-		assert(server_start() == 0);
 		close(1); /* prevent server messing up test output */
+		assert(server_start() == 0);
 	}
 	config_free();
 	return fails;
