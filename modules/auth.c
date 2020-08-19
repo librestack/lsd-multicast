@@ -50,8 +50,7 @@ void auth_free()
 	lc_ctx_free(lctx);
 }
 
-int auth_field_get(char *key, size_t keylen,
-		char *field, void *data, size_t *datalen)
+int auth_field_get(char *key, size_t keylen, char *field, void *data, size_t *datalen)
 {
 	int ret = 0;
 	unsigned char hash[crypto_generichash_BYTES] = "";
@@ -63,8 +62,12 @@ int auth_field_get(char *key, size_t keylen,
 	return ret;
 }
 
-void auth_field_set(char *key, size_t keylen,
-		const char *field, void *data, size_t datalen)
+int auth_field_getv(char *key, size_t keylen, char *field, struct iovec *data)
+{
+	return auth_field_get(key, keylen, field, &data->iov_base, &data->iov_len);
+}
+
+void auth_field_set(char *key, size_t keylen, const char *field, void *data, size_t datalen)
 {
 	unsigned char hash[crypto_generichash_BYTES];
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
@@ -330,27 +333,12 @@ static void auth_op_user_add(lc_message_t *msg)
 	auth_create_user_token(&token, &p);
 
 	/* (3) create user record in db */
-	//char pwhash[crypto_pwhash_STRBYTES];
-	//unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
 	char userid[AUTH_HEXLEN];
-	//randombytes_buf(userid_bytes, sizeof userid_bytes);
-	//sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
-	//DEBUG("userid created: %s", userid);
-	//if (crypto_pwhash_str(pwhash, fields[pass].iov_base, fields[pass].iov_len,
-	//		crypto_pwhash_OPSLIMIT_INTERACTIVE,
-	//		crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
-	//{
-	//	ERROR("crypto_pwhash() error");
-	//}
-
+	
 	//pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
 #if 0
 	auth_field_set(userid, AUTH_HEXLEN, "pkey",
 			fields[repl].iov_base, fields[repl].iov_len);
-	auth_field_set(userid, AUTH_HEXLEN, "mail",
-			fields[mail].iov_base, fields[mail].iov_len);
-	auth_field_set(fields[mail].iov_base,
-			fields[mail].iov_len, "user", userid, AUTH_HEXLEN);
 	auth_field_set(userid, AUTH_HEXLEN, "pass", pwhash, sizeof pwhash);
 	auth_field_set(userid, AUTH_HEXLEN, "serv",
 			fields[serv].iov_base, fields[serv].iov_len);

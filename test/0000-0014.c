@@ -46,6 +46,12 @@ int main()
 	test_expectn(userid, u.iov_base, u.iov_len);
 	free(u.iov_base);
 
+	test_assert(auth_field_getv(userid, AUTH_HEXLEN, "mail", &u) == 0,
+			"auth_field_getv() - fetch mail for user");
+	test_expectiov(&mail, &u);
+
+	/* TODO: token, token expiry etc. */
+
 	auth_free();
 
 	config_free();
