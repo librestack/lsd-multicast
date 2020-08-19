@@ -282,6 +282,33 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	return 0;
 }
 
+int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
+{
+	struct iovec pwhash = {0};
+	struct iovec *pw = &pwhash;
+	struct iovec nopass = { .iov_base = "*", .iov_len = 1 };
+	if (!auth_field_getv(user->iov_base, user->iov_len, "pass", &pwhash))
+	{
+		DEBUG("unable to find password for user");
+		pw = &nopass; /* preserve constant time */
+	}
+	else if (pw->iov_len == 0) {
+		DEBUG("zero length password");
+		pw = &nopass; /* preserve constant time */
+	}
+	if (crypto_pwhash_str_verify(pw->iov_base, pass->iov_base, pass->iov_len) != 0) {
+		DEBUG("password verification failed");
+		errno = EACCES;
+		return -1;
+	}
+	return 0;
+}
+
+int auth_serv_token_get(struct iovec *tok, struct iovec *user, struct iovec *pass, struct iovec *serv)
+{
+	return 0;
+}
+
 int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 {
 	if (config.testmode) {
@@ -309,6 +336,13 @@ int auth_user_token_set(char *userid, auth_user_token_t *token)
 
 int auth_user_token_use(struct iovec *token, struct iovec *pass)
 {
+	struct iovec user = {0};
+	struct iovec expires = {0};
+	//auth_field_getv(token->iov_base, token->iov_len, "user", &user);
+	//auth_field_getv(token->iov_base, token->iov_len, "expires", &expires);
+	/* verifiy token */
+	/* set password */
+	/* delete token */
 	return 0;
 }
 
