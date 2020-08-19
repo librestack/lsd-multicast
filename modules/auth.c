@@ -280,7 +280,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	return 0;
 }
 
-int auth_create_user_token(auth_user_token_t *token, auth_payload_t *payload)
+int auth_create_token_new(auth_user_token_t *token, auth_payload_t *payload)
 {
 	if (config.testmode) {
 		DEBUG("auth_create_user_token(): test mode enabled");
@@ -330,7 +330,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	}
 
 	auth_user_token_t token;
-	auth_create_user_token(&token, &p);
+	auth_create_token_new(&token, &p);
 
 	/* (3) create user record in db */
 	char userid[AUTH_HEXLEN];
@@ -343,6 +343,9 @@ static void auth_op_user_add(lc_message_t *msg)
 			&token.expires, sizeof token.expires);
 #endif
 	auth_user_create(userid, &fields[mail], &fields[pass]);
+
+	//auth_user_token_set(userid, &token);
+
 
 	/* TODO: logfile entry */
 	DEBUG("user created");
