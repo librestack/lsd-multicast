@@ -41,6 +41,8 @@ int main()
 	test_log("exp; %llu", expires);
 	test_log("dif; %llu", expires - now);
 
+	test_assert(auth_user_token_valid(&tok), "auth_user_token_valid()");
+
 	/* make up a userid */
 	char userid[AUTH_HEXLEN];
 	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];

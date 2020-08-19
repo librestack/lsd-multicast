@@ -305,6 +305,11 @@ int auth_user_token_set(char *userid, auth_user_token_t *token)
 	return i;
 }
 
+int auth_user_token_valid(auth_user_token_t *token)
+{
+	return (be64toh(token->expires) <= time(NULL) + 60 * 15);
+}
+
 static void auth_op_noop(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
