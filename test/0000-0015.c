@@ -35,16 +35,15 @@ int main()
 	tok.iov_len = strlen(tok.iov_base);
 	struct iovec pass = { .iov_base = "password" };
 	pass.iov_len = strlen(pass.iov_base);
-
 	struct iovec user = { .iov_base = userid };
 	user.iov_len = strlen(user.iov_base);
-#if 0
+
 	test_log("try to login before token set");
 	test_assert(auth_user_pass_verify(&user, &pass) == -1,
 			"auth_user_pass_verify() login before token set (-1)");
 	test_assert(errno == EACCES,
 			"auth_user_pass_verify() login before token set (EACCES)");
-#endif
+
 	test_log("user returns with token, set password");
 	test_assert(auth_user_token_use(&tok, &pass) == 0,
 			"auth_user_token_use()");

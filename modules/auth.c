@@ -74,6 +74,19 @@ int auth_field_set(char *key, size_t keylen, const char *field, void *data, size
 	return lc_db_set(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
 }
 
+int auth_user_pass_set(char *userid, struct iovec *pass)
+{
+	char pwhash[crypto_pwhash_STRBYTES];
+	if (crypto_pwhash_str(pwhash, pass->iov_base, pass->iov_len,
+			crypto_pwhash_OPSLIMIT_INTERACTIVE,
+			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
+	{
+		ERROR("crypto_pwhash() error");
+		return -1;
+	}
+	return auth_field_set(userid, AUTH_HEXLEN, "pass", pwhash, sizeof pwhash);
+}
+
 int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 {
 	struct iovec nopass = {0};
@@ -86,29 +99,15 @@ int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 	if (!pass) pass = &nopass;
 
 	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
-	char pwhash[crypto_pwhash_STRBYTES];
 	randombytes_buf(userid_bytes, sizeof userid_bytes);
 	sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
 	DEBUG("userid created: %s", userid);
-	if (crypto_pwhash_str(pwhash, pass->iov_base, pass->iov_len,
-			crypto_pwhash_OPSLIMIT_INTERACTIVE,
-			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
-	{
-		ERROR("crypto_pwhash() error");
+	if (auth_user_pass_set(userid, pass)) {
+		ERROR("failed to set password");
+		return -1;
 	}
-
-	//auth_field_set(userid, AUTH_HEXLEN, "pkey", repl.iov_base, repl.iov_len);
 	auth_field_set(userid, AUTH_HEXLEN, "mail", mail->iov_base, mail->iov_len);
 	auth_field_set(mail->iov_base, mail->iov_len, "user", userid, AUTH_HEXLEN);
-	auth_field_set(userid, AUTH_HEXLEN, "pass", pwhash, sizeof pwhash);
-	//auth_field_set(userid, AUTH_HEXLEN, "serv",
-	//		fields[serv].iov_base, fields[serv].iov_len);
-	//auth_field_set(userid, AUTH_HEXLEN, "token", token.hextoken, AUTH_HEXLEN);
-	//auth_field_set(token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
-	//auth_field_set(token.hextoken, AUTH_HEXLEN, "expires",
-	//		&token.expires, sizeof token.expires);
-
-
 	return 0;
 }
 
@@ -287,7 +286,7 @@ int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
 	struct iovec pwhash = {0};
 	struct iovec *pw = &pwhash;
 	struct iovec nopass = { .iov_base = "*", .iov_len = 1 };
-	if (auth_field_getv(user->iov_base, user->iov_len, "pass", &pwhash))
+	if (auth_field_getv(user->iov_base, AUTH_HEXLEN, "pass", &pwhash))
 	{
 		DEBUG("unable to find password for user");
 		pw = &nopass; /* preserve constant time */
@@ -341,14 +340,16 @@ int auth_user_token_set(char *userid, auth_user_token_t *token)
 
 int auth_user_token_use(struct iovec *token, struct iovec *pass)
 {
+	int ret = 0;
 	struct iovec user = {0};
 	struct iovec expires = {0};
 	auth_user_token_t tok = {0};
-	if (auth_field_getv(token->iov_base, token->iov_len, "user", &user)) {
+	DEBUG("search for token '%.*s'", (int)token->iov_len, (char *)token->iov_base);
+	if (auth_field_getv(token->iov_base, AUTH_HEXLEN, "user", &user)) {
 		DEBUG ("user token not found");
 		return -1;
 	}
-	if (auth_field_getv(token->iov_base, token->iov_len, "expires", &expires)) {
+	if (auth_field_getv(token->iov_base, AUTH_HEXLEN, "expires", &expires)) {
 		DEBUG ("user token expiry not found");
 		return -1;
 	}
@@ -356,9 +357,14 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	if (!auth_user_token_valid(&tok)) {
 		return -1;
 	}
-	/* set password */
-	/* delete token */
-	return 0;
+	char *userid = strndup(user.iov_base, user.iov_len);
+	if (auth_user_pass_set(userid, pass))
+		ret = -1;
+	free(userid);
+
+	/* TODO: delete token */
+
+	return ret;
 }
 
 int auth_user_token_valid(auth_user_token_t *token)
