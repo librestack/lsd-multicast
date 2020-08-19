@@ -71,7 +71,7 @@ void auth_field_set(char *key, size_t keylen,
 	lc_db_set(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen);
 }
 
-int auth_user_create(struct iovec *mail, struct iovec *pass)
+int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 {
 	if (!auth_valid_email(mail->iov_base, mail->iov_len))
 		return -1;
@@ -79,6 +79,29 @@ int auth_user_create(struct iovec *mail, struct iovec *pass)
 	/* we don't do any strength checking on passwords here
 	 * save that for the UI where we can give proper feedback */
 	if (!pass->iov_len) return -1;
+
+	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
+	char pwhash[crypto_pwhash_STRBYTES];
+	randombytes_buf(userid_bytes, sizeof userid_bytes);
+	sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
+	DEBUG("userid created: %s", userid);
+	if (crypto_pwhash_str(pwhash, pass->iov_base, pass->iov_len,
+			crypto_pwhash_OPSLIMIT_INTERACTIVE,
+			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
+	{
+		ERROR("crypto_pwhash() error");
+	}
+
+	//auth_field_set(userid, AUTH_HEXLEN, "pkey", repl.iov_base, repl.iov_len);
+	auth_field_set(userid, AUTH_HEXLEN, "mail", mail->iov_base, mail->iov_len);
+	auth_field_set(mail->iov_base, mail->iov_len, "user", userid, AUTH_HEXLEN);
+	auth_field_set(userid, AUTH_HEXLEN, "pass", pwhash, sizeof pwhash);
+	//auth_field_set(userid, AUTH_HEXLEN, "serv",
+	//		fields[serv].iov_base, fields[serv].iov_len);
+	//auth_field_set(userid, AUTH_HEXLEN, "token", token.hextoken, AUTH_HEXLEN);
+	//auth_field_set(token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
+	//auth_field_set(token.hextoken, AUTH_HEXLEN, "expires",
+	//		&token.expires, sizeof token.expires);
 
 
 	return 0;
@@ -310,20 +333,21 @@ static void auth_op_user_add(lc_message_t *msg)
 	auth_create_user_token(&token, &p);
 
 	/* (3) create user record in db */
-	char pwhash[crypto_pwhash_STRBYTES];
-	unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
+	//char pwhash[crypto_pwhash_STRBYTES];
+	//unsigned char userid_bytes[crypto_box_PUBLICKEYBYTES];
 	char userid[AUTH_HEXLEN];
-	randombytes_buf(userid_bytes, sizeof userid_bytes);
-	sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
-	DEBUG("userid created: %s", userid);
-	if (crypto_pwhash_str(pwhash, fields[pass].iov_base, fields[pass].iov_len,
-			crypto_pwhash_OPSLIMIT_INTERACTIVE,
-			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
-	{
-		ERROR("crypto_pwhash() error");
-	}
-	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
-	auth_init();
+	//randombytes_buf(userid_bytes, sizeof userid_bytes);
+	//sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
+	//DEBUG("userid created: %s", userid);
+	//if (crypto_pwhash_str(pwhash, fields[pass].iov_base, fields[pass].iov_len,
+	//		crypto_pwhash_OPSLIMIT_INTERACTIVE,
+	//		crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
+	//{
+	//	ERROR("crypto_pwhash() error");
+	//}
+
+	//pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
+#if 0
 	auth_field_set(userid, AUTH_HEXLEN, "pkey",
 			fields[repl].iov_base, fields[repl].iov_len);
 	auth_field_set(userid, AUTH_HEXLEN, "mail",
@@ -337,6 +361,8 @@ static void auth_op_user_add(lc_message_t *msg)
 	auth_field_set(token.hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN);
 	auth_field_set(token.hextoken, AUTH_HEXLEN, "expires",
 			&token.expires, sizeof token.expires);
+#endif
+	auth_user_create(userid, &fields[mail], &fields[pass]);
 
 	/* TODO: logfile entry */
 	DEBUG("user created");
@@ -367,8 +393,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
 	lc_msg_free(&response);
-	auth_free();
-	pthread_setcancelstate(state, NULL);
+	//pthread_setcancelstate(state, NULL);
 };
 
 static void auth_op_user_delete(lc_message_t *msg)

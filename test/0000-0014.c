@@ -22,14 +22,14 @@ int main()
 	pass.iov_len = strlen(pass.iov_base);
 	struct iovec nopass = { .iov_base = "", .iov_len = 0 };
 
-
-	test_assert(auth_user_create(&mail, &pass) == 0,
+	char userid[AUTH_HEXLEN];
+	test_assert(auth_user_create(userid, &mail, &pass) == 0,
 			"auth_user_create()");
 
-	test_assert(auth_user_create(&mail_invalid, &pass) == -1,
+	test_assert(auth_user_create(NULL, &mail_invalid, &pass) == -1,
 			"auth_user_create() - invalid email");
 
-	test_assert(auth_user_create(&mail, &nopass) == -1,
+	test_assert(auth_user_create(NULL, &mail, &nopass) == -1,
 			"auth_user_create() - no password");
 
 	/* try to fetch invalid mail address */
