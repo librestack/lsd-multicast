@@ -99,6 +99,7 @@ unsigned char *auth_key_sign_sk_bin(unsigned char *binkey, char *combokey);
 int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass);
 int auth_user_bymail(struct iovec *mail, struct iovec *userid);
 int auth_valid_email(char *mail, size_t len);
+int auth_reply(struct iovec *repl, struct iovec *key, struct iovec *data, uint8_t op, uint8_t flags);
 int auth_serv_token_new(struct iovec *tok, struct iovec *clientkey, struct iovec *serv);
 int auth_serv_token_get(struct iovec *tok, struct iovec *user, struct iovec *pass, struct iovec *serv);
 int auth_user_pass_verify(struct iovec *user, struct iovec *pass);

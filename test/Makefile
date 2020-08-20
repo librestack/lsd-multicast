@@ -46,6 +46,7 @@ build:
 0000-0014.test: LDFLAGS += ../modules/auth.o -lsodium -lcurl
 0000-0015.test: LDFLAGS += ../modules/auth.o -lsodium -lcurl
 0000-0016.test: LDFLAGS += ../modules/auth.o -lsodium -lcurl
+0000-0017.test: LDFLAGS += ../modules/auth.o -lsodium -lcurl -pthread
 
 %.test: %.c $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

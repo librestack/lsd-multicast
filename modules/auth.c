@@ -290,6 +290,25 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	return 0;
 }
 
+int auth_reply(struct iovec *repl, struct iovec *key, struct iovec *data, uint8_t op, uint8_t flags)
+{
+	DEBUG("response to requestor");
+	lc_socket_t *sock = NULL;
+	lc_channel_t *chan = NULL;
+	lc_message_t response = {0};
+	sock = lc_socket_new(lctx);
+	chan = lc_channel_nnew(lctx, key->iov_base, crypto_box_PUBLICKEYBYTES);
+	lc_channel_bind(sock, chan);
+	lc_msg_init_size(&response, 2); /* just an opcode + flag really */
+	((uint8_t *)response.data)[0] = op;	/* TODO: response opcode */
+	((uint8_t *)response.data)[1] = flags;	/* TODO: define response codes */
+	int opt = 1; /* set loopback in case we're on the same host as the sender */
+	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
+	lc_msg_send(chan, &response);
+	lc_msg_free(&response);
+	return 0;
+};
+
 int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
 {
 	int ret = 0;
@@ -475,11 +494,6 @@ static void auth_op_user_add(lc_message_t *msg)
 	};
 	struct iovec fields[fieldcount] = {0};
 	auth_payload_t p = { .fields = fields, .fieldcount = fieldcount };
-	lc_socket_t *sock = NULL;
-	lc_channel_t *chan = NULL;
-	lc_message_t response = {0};
-
-	/* FIXME: must have keys to continue */
 
 	if (auth_decode_packet(msg, &p) == -1) {
 		perror("auth_decode_packet()");
@@ -512,18 +526,8 @@ static void auth_op_user_add(lc_message_t *msg)
 		}
 		free(to);
 	}
-
-	DEBUG("response to requestor");
-	sock = lc_socket_new(lctx);
-	chan = lc_channel_nnew(lctx, p.senderkey.iov_base, crypto_box_PUBLICKEYBYTES);
-	lc_channel_bind(sock, chan);
-	lc_msg_init_size(&response, 2); /* just an opcode + flag really */
-	((uint8_t *)response.data)[0] = AUTH_OP_NOOP;	/* TODO: response opcode */
-	((uint8_t *)response.data)[1] = 7;		/* TODO: define response codes */
-	int opt = 1; /* set loopback in case we're on the same host as the sender */
-	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
-	lc_msg_send(chan, &response);
-	lc_msg_free(&response);
+	struct iovec data = {0};
+	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
 };
 
 static void auth_op_user_delete(lc_message_t *msg)
@@ -539,6 +543,24 @@ static void auth_op_user_lock(lc_message_t *msg)
 static void auth_op_user_unlock(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
+	enum {
+		repl,
+		tok,
+		pass,
+		fieldcount
+	};
+	struct iovec data = {0};
+	struct iovec fields[fieldcount] = {0};
+	auth_payload_t p = { .fields = fields, .fieldcount = fieldcount };
+	if (auth_decode_packet(msg, &p) == -1) {
+		perror("auth_decode_packet()");
+		return;
+	}
+
+	/* TODO: verify token, set password etc. - auth_user_token_use() */
+	//auth_user_token_use(&fields[tok], &fields[pass]);
+
+	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
 };
 
 static void auth_op_key_add(lc_message_t *msg)
@@ -627,7 +649,6 @@ void init(config_t *c)
 void finit(void)
 {
 	TRACE("auth.so %s()", __func__);
-	config_free();
 	auth_free();
 }
 
