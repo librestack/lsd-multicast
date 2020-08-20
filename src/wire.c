@@ -28,7 +28,7 @@ ssize_t wire_pack_pre(struct iovec *data, struct iovec *iovs[], int iov_count,
 		errno = EINVAL;
 		return -1;
 	}
-	for (int i=0; i < pre_count; i++) offset += pre[i].iov_len;
+	for (int i = 0; i < pre_count; i++) offset += pre[i].iov_len;
 	data->iov_len = offset;
 	for (int i = 0; i < iov_count; i++) {
 		/* 1 byte for length + data */
@@ -37,8 +37,9 @@ ssize_t wire_pack_pre(struct iovec *data, struct iovec *iovs[], int iov_count,
 			data->iov_len++; /* extra length byte */
 	}
 	ptr = data->iov_base = calloc(1, data->iov_len + 1);
-	for (int i=0; i < pre_count; i++) {
-		memcpy(ptr++, pre[i].iov_base, pre[i].iov_len);
+	for (int i = 0; i < pre_count; i++) {
+		memcpy(ptr, pre[i].iov_base, pre[i].iov_len);
+		ptr += pre[i].iov_len;
 	}
 	return wire_pack_7bit(data, iovs, iov_count, offset);
 }
