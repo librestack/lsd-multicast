@@ -71,7 +71,9 @@ struct auth_payload_s {
 	uint8_t		opcode;
 	uint8_t		flags;
 	struct iovec	senderkey;
+	int		pre_count;
 	int		fieldcount;
+	struct iovec	*pre;
 	struct iovec	*fields;
 };
 

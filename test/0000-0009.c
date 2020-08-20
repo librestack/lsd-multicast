@@ -46,7 +46,7 @@ void *testthread(void *arg)
 	for (int i = 1; i < iov_count; i++) {
 		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
 	}
-	len = wire_pack(&data, iovs, iov_count, op, flags);
+	len = wire_pack_pre(&data, iovs, iov_count, NULL, 0);
 	test_assert(len > 0, "wire_pack() returned %i", len);
 
 	/* (2) encrypt packet */

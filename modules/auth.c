@@ -263,14 +263,8 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	struct iovec clearpkt = {0};
 	clearpkt.iov_base = data;
 	clearpkt.iov_len = outer[fld_payload].iov_len - crypto_box_MACBYTES;
-	if (wire_unpack(&clearpkt,
-			payload->fields,
-			payload->fieldcount,
-			&payload->opcode,
-			&payload->flags) == -1)
-	{
+	if (wire_unpack_pre(&clearpkt, payload->fields, payload->fieldcount, NULL, 0) == -1)
 		return -1;
-	}
 	DEBUG("wire_unpack() fieldcount: %i", payload->fieldcount);
 	DEBUG("wire_unpack() done, dumping fields...");
 
