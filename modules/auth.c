@@ -356,7 +356,7 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *clientkey, struct iovec
 
 	/* TODO: permission bits */
 
-	expires = htobe64(time(NULL) + 60 * 60 * 8); /* TODO: from config */
+	expires = htobe64(time(NULL) + config.handlers->token_duration);
 	wire_pack_pre(&data, caps, iov_count, pre, pre_count);
 
 

@@ -30,6 +30,7 @@ port				return PORT;
 proto				return PROTO;
 scope				return SCOPE;
 testmode			return TESTMODE;
+token_duration			return TOKEN_DURATION;
 [0-9]+				yylval.ival = atoi(yytext); return NUMBER;
 :				return COLON;
 \"[^"\n]*["\n] {

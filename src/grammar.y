@@ -12,8 +12,10 @@ void yyerror(const char *str);
 int yylex(void);
 int yywrap(void);
 int handlers = 0;
-handler_t *handler_last = NULL;
-handler_t handler = {};
+handler_t *handler_last;
+handler_t handler = {
+	.token_duration = 360
+};
 
 %}
 %union
@@ -52,6 +54,7 @@ handler_t handler = {};
 %token <sval> SECTION
 %token <sval> SLASH
 %token <sval> TESTMODE
+%token <ival> TOKEN_DURATION
 %token <sval> WORD
 %token <sval> V6ADDR
 
@@ -199,6 +202,12 @@ handler:
 	{
 		fprintf(stderr, "handler scope = %s\n", $2);
 		handler.scope = $2;
+	}
+	|
+	TOKEN_DURATION NUMBER
+	{
+		fprintf(stderr, "token_duration = %i\n", $2);
+		handler.token_duration = $2;
 	}
 	;
 %%

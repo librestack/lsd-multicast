@@ -52,12 +52,9 @@ int main()
 	wire_unpack_pre(&data, iovs, iov_count, pre, pre_count);
 
 	test_log("expires: %u", expires);
-
-	/* t-5s < expires <= t */
-	/* FIXME: limit from config */
 	expires = be64toh(expires);
-	test_assert(expires > time(NULL) + 60 * 60 * 8 - 5, "check expires");
-	test_assert(expires <= time(NULL) + 60 * 60 * 8, "check expires");
+	test_assert(expires > time(NULL) + config.handlers->token_duration - 5, "check expires");
+	test_assert(expires <= time(NULL) + config.handlers->token_duration, "check expires");
 
 	test_expectiov(&clientkey, &iovs[0]);
 	test_expectiov(&serv, &iovs[1]);
