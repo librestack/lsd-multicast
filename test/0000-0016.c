@@ -11,7 +11,7 @@
 
 int main()
 {
-	test_name("auth service capability tokens");
+	test_name("auth_serv_token_new()");
 	char dbpath[] = "0000-0016.tmp.XXXXXX";
 	config_include("./0000-0016.conf");
 	auth_init();
