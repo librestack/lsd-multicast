@@ -10,7 +10,7 @@
 
 int main()
 {
-	test_name("auth user token verification");
+	test_name("auth_user_pass_verify()");
 	char dbpath[] = "0000-0015.tmp.XXXXXX";
 	config_include("./0000-0015.conf");
 	auth_init();

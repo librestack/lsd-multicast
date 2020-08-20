@@ -53,6 +53,19 @@ int main()
 	test_assert(auth_user_token_set(userid, &tok) == 0,
 			"auth_user_token_set()");
 
+	struct iovec badtoken = { .iov_base = "badtoken" };
+	badtoken.iov_len = strlen(badtoken.iov_base);
+	struct iovec usertoken = { .iov_base = tok.hextoken };
+	usertoken.iov_len = strlen(usertoken.iov_base);
+	struct iovec pass = { .iov_base = "correcthorsebatterystaple" };
+	pass.iov_len = strlen(pass.iov_base);
+	test_assert(auth_user_token_use(&badtoken, &pass) == -1,
+			"auth_user_token_use() - bad token");
+	test_assert(auth_user_token_use(&usertoken, &pass) == 0,
+			"auth_user_token_use() - set password");
+	test_assert(auth_user_token_use(&usertoken, &pass) == -1,
+			"auth_user_token_use() - use same token twice");
+	/* TODO: expired token */
 
 	auth_free();
 	config_free();

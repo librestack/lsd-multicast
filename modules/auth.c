@@ -447,6 +447,7 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	int ret = 0;
 	struct iovec user = {0};
 	struct iovec expires = {0};
+	char *userid;
 	auth_user_token_t tok = {0};
 	DEBUG("search for token '%.*s'", (int)token->iov_len, (char *)token->iov_base);
 	if (auth_field_getv(token->iov_base, AUTH_HEXLEN, "user", &user)) {
@@ -462,7 +463,7 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	if (!auth_user_token_valid(&tok)) {
 		return -1;
 	}
-	char *userid = strndup(user.iov_base, user.iov_len);
+	userid = strndup(user.iov_base, user.iov_len);
 	if (auth_user_pass_set(userid, pass))
 		ret = -1;
 	free(userid);
@@ -546,7 +547,6 @@ static void auth_op_user_unlock(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
 	enum {
-		repl,
 		tok,
 		pass,
 		fieldcount
@@ -558,11 +558,8 @@ static void auth_op_user_unlock(lc_message_t *msg)
 		perror("auth_decode_packet()");
 		return;
 	}
-
-	/* TODO: verify token, set password etc. - auth_user_token_use() */
-	//auth_user_token_use(&fields[tok], &fields[pass]);
-
-	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
+	auth_user_token_use(&fields[tok], &fields[pass]);
+	auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
 };
 
 static void auth_op_key_add(lc_message_t *msg)
