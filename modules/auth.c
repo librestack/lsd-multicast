@@ -586,13 +586,17 @@ static void auth_op_auth_service(lc_message_t *msg)
 	else {
 		/* user not supplied, look up from mail address */
 		if (auth_user_bymail(&fields[mail], &userid)) {
+			ERROR("no user found for '%.*s'", (int)fields[mail].iov_len,
+					(char *)fields[mail].iov_base);
 			return;
 		}
 	}
 	if (auth_user_pass_verify(&userid, &fields[pass])) {
+		ERROR("failed login for user %.*s", (int)userid.iov_len, (char *)userid.iov_base);
 		return;
 	}
 	if (auth_serv_token_new(&cap, p.senderkey.iov_base, &fields[serv])) {
+		perror("auth_serv_token_new()");
 		return;
 	}
 
