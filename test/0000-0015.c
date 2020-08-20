@@ -26,7 +26,7 @@ int main()
 	test_log("create user token");
 	auth_user_token_t token;
 	auth_payload_t payload;
-	payload.senderkey = (unsigned char *)config.handlers->key_public;
+	payload.senderkey.iov_base = (unsigned char *)config.handlers->key_public;
 	auth_user_token_new(&token, &payload);
 	test_log("set user token");
 	auth_user_token_set(userid, &token);

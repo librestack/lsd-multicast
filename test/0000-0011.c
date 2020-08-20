@@ -19,10 +19,11 @@ int main()
 	unsigned char token[crypto_box_PUBLICKEYBYTES];
 	unsigned char seed[randombytes_SEEDBYTES];
 	char hextoken[AUTH_HEXLEN];
-	auth_user_token_t tok;
-	auth_payload_t payload;
+	auth_user_token_t tok = {0};
+	auth_payload_t payload = {0};
 
-	payload.senderkey = (unsigned char *)config.handlers->key_public;
+	payload.senderkey.iov_base = config.handlers->key_public;
+	payload.senderkey.iov_len = strlen(config.handlers->key_public);
 	test_assert(auth_user_token_new(&tok, &payload) == 0,
 			"auth_user_token_new()");
 	memcpy(seed, config.handlers->key_public, randombytes_SEEDBYTES);

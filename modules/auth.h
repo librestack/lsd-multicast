@@ -70,7 +70,7 @@ typedef struct auth_payload_s auth_payload_t;
 struct auth_payload_s {
 	uint8_t		opcode;
 	uint8_t		flags;
-	unsigned char	*senderkey;
+	struct iovec	senderkey;
 	int		fieldcount;
 	struct iovec	*fields;
 };

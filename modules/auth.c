@@ -244,7 +244,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 
 	unsigned char data[outer[fld_payload].iov_len - crypto_box_MACBYTES];
 	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
-	payload->senderkey = outer[fld_key].iov_base;
+	payload->senderkey = outer[fld_key];
 	unsigned char *nonce = outer[fld_nonce].iov_base;
 	sodium_hex2bin(privatekey,
 			crypto_box_SECRETKEYBYTES,
@@ -257,7 +257,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	if (crypto_box_open_easy(data,
 				outer[fld_payload].iov_base,
 				outer[fld_payload].iov_len,
-				nonce, payload->senderkey, privatekey) != 0)
+				nonce, payload->senderkey.iov_base, privatekey) != 0)
 	{
 		ERROR("packet decryption failed");
 		return -1;
@@ -396,7 +396,7 @@ int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 	if (config.testmode) {
 		DEBUG("auth_user_token_new(): test mode enabled");
 		unsigned char seed[randombytes_SEEDBYTES];
-		memcpy(seed, payload->senderkey, randombytes_SEEDBYTES);
+		memcpy(seed, payload->senderkey.iov_base, randombytes_SEEDBYTES);
 		randombytes_buf_deterministic(token->token, sizeof token->token, seed);
 	}
 	else randombytes_buf(token->token, sizeof token->token);
@@ -515,7 +515,7 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	DEBUG("response to requestor");
 	sock = lc_socket_new(lctx);
-	chan = lc_channel_nnew(lctx, p.senderkey, crypto_box_PUBLICKEYBYTES);
+	chan = lc_channel_nnew(lctx, p.senderkey.iov_base, crypto_box_PUBLICKEYBYTES);
 	lc_channel_bind(sock, chan);
 	lc_msg_init_size(&response, 2); /* just an opcode + flag really */
 	((uint8_t *)response.data)[0] = AUTH_OP_NOOP;	/* TODO: response opcode */
@@ -568,59 +568,47 @@ static void auth_op_auth_service(lc_message_t *msg)
 		fieldcount
 	};
 	struct iovec fields[fieldcount] = {0};
+	struct iovec userid = {0};
+	struct iovec cap = {0};
+	lc_socket_t *sock = NULL;
+	lc_channel_t *chan = NULL;
+	lc_message_t response = {0};
 	auth_payload_t p = {0};
 	p.fields = fields;
 	p.fieldcount = fieldcount;
-	int state;
-	//lc_socket_t *sock = NULL;
-	//lc_channel_t *chan = NULL;
-	//lc_message_t response = {0};
-	handler_t *h = config.handlers;
-
-	/* FIXME: must have keys to continue */
 
 	if (auth_decode_packet(msg, &p) == -1) {
 		perror("auth_decode_packet()");
 		return;
 	}
-
-	/* hash password to compare */
-#if 0
-	char pwhash[crypto_pwhash_STRBYTES] = "";
-	if (crypto_pwhash_str(pwhash, fields[pass].iov_base, fields[pass].iov_len,
-			crypto_pwhash_OPSLIMIT_INTERACTIVE,
-			crypto_pwhash_MEMLIMIT_INTERACTIVE) != 0)
-	{
-		ERROR("crypto_pwhash() error");
-	}
-#endif
-	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &state);
-	if (mkdir(h->dbpath, S_IRWXU) == -1 && errno != EEXIST) {
-		ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
-	}
-
-
-	//unsigned char hash[AUTH_HEXLEN] = "";
-	void *vptr = NULL;
-	size_t vlen;
-
-	/* find userid for email */
-	if (auth_field_get(fields[mail].iov_base, fields[mail].iov_len, "user", &vptr, &vlen)) {
-		ERROR("invalid mail");
-	}
+	if (fields[user].iov_len > 0)
+		userid = fields[user];
 	else {
-		DEBUG("got userid '%.*s' for email '%.*s'", vptr, vlen,
-			fields[mail].iov_base, fields[mail].iov_len);
-		free(vptr);
+		/* user not supplied, look up from mail address */
+		if (auth_user_bymail(&fields[mail], &userid)) {
+			return;
+		}
+	}
+	if (auth_user_pass_verify(&userid, &fields[pass])) {
+		return;
+	}
+	if (auth_serv_token_new(&cap, p.senderkey.iov_base, &fields[serv])) {
+		return;
 	}
 
-	/* TODO: fetch password from database */
-	/* TODO: check password */
-	/* TODO: create capability token */
 	/* TODO: logfile entry */
-	/* TODO: reply to reply address */
 
-	pthread_setcancelstate(state, NULL);
+	DEBUG("response to requestor");
+	sock = lc_socket_new(lctx);
+	chan = lc_channel_nnew(lctx, p.senderkey.iov_base, crypto_box_PUBLICKEYBYTES);
+	lc_channel_bind(sock, chan);
+	lc_msg_init_size(&response, 2); /* just an opcode + flag really */
+	((uint8_t *)response.data)[0] = AUTH_OP_NOOP;	/* TODO: response opcode */
+	((uint8_t *)response.data)[1] = 7;		/* TODO: define response codes */
+	int opt = 1; /* set loopback in case we're on the same host as the sender */
+	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
+	lc_msg_send(chan, &response);
+	lc_msg_free(&response);
 
 };
 
