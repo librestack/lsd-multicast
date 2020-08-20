@@ -463,11 +463,13 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	if (!auth_user_token_valid(&tok)) {
 		return -1;
 	}
+	DEBUG("valid user token");
 	userid = strndup(user.iov_base, user.iov_len);
 	if (auth_user_pass_set(userid, pass))
 		ret = -1;
 	free(userid);
 	free(user.iov_base);
+	DEBUG("password set");
 
 	/* TODO: delete token */
 
