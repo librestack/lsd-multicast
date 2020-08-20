@@ -23,8 +23,7 @@ int main()
 	clientkey.iov_len = strlen(clientkey.iov_base);
 	struct iovec serv = { .iov_base = "service" };
 	serv.iov_len = strlen(serv.iov_base);
-	test_assert(auth_serv_token_new(&cap_sig, &clientkey, &serv) == 0,
-			"auth_serv_token_new()");
+	test_assert(auth_serv_token_new(&cap_sig, &clientkey, &serv) == 0, "auth_serv_token_new()");
 	test_log("cap_sig.iov_len = %zu", cap_sig.iov_len);
 
 	test_assert(cap_sig.iov_len > 0, "cap token check length");
@@ -33,12 +32,9 @@ int main()
 	unsigned char *cap = malloc(cap_sig.iov_len - crypto_sign_BYTES);
 	unsigned long long cap_len;
 	unsigned char pk[crypto_sign_PUBLICKEYBYTES];
-
 	auth_key_sign_pk_bin(pk, config.handlers->key_public);
-
 	test_assert(crypto_sign_open(cap, &cap_len,
-		cap_sig.iov_base, cap_sig.iov_len, pk) == 0,
-			"verified cap signature");
+		cap_sig.iov_base, cap_sig.iov_len, pk) == 0, "verified cap signature");
 
 	/* unpack the token and check it */
 	struct iovec iovs[2] = {0};
@@ -51,15 +47,11 @@ int main()
 	pre[0].iov_base = &expires;
 	wire_unpack_pre(&data, iovs, iov_count, pre, pre_count);
 
-	test_log("expires: %u", expires);
 	expires = be64toh(expires);
 	test_assert(expires > time(NULL) + config.handlers->token_duration - 5, "check expires");
 	test_assert(expires <= time(NULL) + config.handlers->token_duration, "check expires");
-
 	test_expectiov(&clientkey, &iovs[0]);
 	test_expectiov(&serv, &iovs[1]);
-
-	/* TODO: check flags */
 
 	free(cap);
 	free(cap_sig.iov_base);
