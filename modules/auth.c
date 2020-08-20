@@ -348,9 +348,16 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *clientkey, struct iovec
 	struct iovec data;
 	struct iovec *caps[] = { clientkey, serv };
 	const int iov_count = sizeof caps / sizeof caps[0];
-	uint8_t op = 0x1;
-	uint8_t flags = 0x7;
-	wire_pack(&data, caps, iov_count, op, flags);
+	uint64_t expires;
+	struct iovec pre[1] = {0};
+	const int pre_count = sizeof pre / sizeof pre[0];
+	pre[0].iov_base = &expires;
+	pre[0].iov_len = sizeof expires;
+
+	/* TODO: permission bits */
+
+	expires = htobe64(time(NULL) + 60 * 60 * 8); /* TODO: from config */
+	wire_pack_pre(&data, caps, iov_count, pre, pre_count);
 
 
 	cap_sig = malloc(crypto_sign_BYTES + data.iov_len);
