@@ -94,6 +94,8 @@ int auth_field_getv(char *key, size_t keylen, char *field, struct iovec *data);
 int auth_field_set(char *key, size_t keylen, const char *field, void *data, size_t datalen);
 char *auth_key_sign_pk_hex(char *combokey);
 char *auth_key_sign_sk_hex(char *combokey);
+unsigned char *auth_key_crypt_pk_bin(unsigned char *binkey, char *combokey);
+unsigned char *auth_key_crypt_sk_bin(unsigned char *binkey, char *combokey);
 unsigned char *auth_key_sign_pk_bin(unsigned char *binkey, char *combokey);
 unsigned char *auth_key_sign_sk_bin(unsigned char *binkey, char *combokey);
 int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass);

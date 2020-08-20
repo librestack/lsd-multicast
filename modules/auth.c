@@ -246,13 +246,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
 	payload->senderkey = outer[fld_key];
 	unsigned char *nonce = outer[fld_nonce].iov_base;
-	sodium_hex2bin(privatekey,
-			crypto_box_SECRETKEYBYTES,
-			config.handlers->key_private,
-			crypto_box_SECRETKEYBYTES * 2,
-			NULL,
-			0,
-			NULL);
+	auth_key_crypt_sk_bin(privatekey, config.handlers->key_private);
 	memset(data, 0, sizeof data);
 	if (crypto_box_open_easy(data,
 				outer[fld_payload].iov_base,
@@ -341,6 +335,20 @@ char *auth_key_sign_pk_hex(char *combokey)
 char *auth_key_sign_sk_hex(char *combokey)
 {
 	return combokey + crypto_box_SECRETKEYBYTES * 2;
+}
+
+unsigned char *auth_key_crypt_pk_bin(unsigned char *binkey, char *combokey)
+{
+	sodium_hex2bin(binkey, crypto_box_PUBLICKEYBYTES, combokey,
+		crypto_box_PUBLICKEYBYTES * 2, NULL, 0, NULL);
+	return binkey;
+}
+
+unsigned char *auth_key_crypt_sk_bin(unsigned char *binkey, char *combokey)
+{
+	sodium_hex2bin(binkey, crypto_box_SECRETKEYBYTES, combokey,
+		crypto_box_SECRETKEYBYTES * 2, NULL, 0, NULL);
+	return binkey;
 }
 
 unsigned char *auth_key_sign_pk_bin(unsigned char *binkey, char *combokey)

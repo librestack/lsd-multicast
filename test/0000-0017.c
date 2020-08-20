@@ -43,7 +43,8 @@ void *testthread(void *arg)
 	for (int i = 1; i < iov_count; i++) {
 		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
 	}
-	len = wire_pack(&data, iovs, iov_count, op, flags);
+	//len = wire_pack(&data, iovs, iov_count, op, flags);
+	len = wire_pack_pre(&data, iovs, iov_count, NULL, 0);
 	test_assert(len > 0, "wire_pack() returned %i", len);
 
 	/* (2) encrypt packet */
@@ -53,13 +54,7 @@ void *testthread(void *arg)
 	const size_t cipherlen = crypto_box_MACBYTES + data.iov_len;
 	unsigned char ciphertext[cipherlen];
 
-	sodium_hex2bin(authpubkey,
-			crypto_box_PUBLICKEYBYTES,
-			authpubhex,
-			crypto_box_PUBLICKEYBYTES * 2,
-			NULL,
-			0,
-			NULL);
+	auth_key_crypt_pk_bin(authpubkey, authpubhex);
 	randombytes_buf(nonce, sizeof nonce);
 	test_assert(!crypto_box_easy(ciphertext, (unsigned char *)data.iov_base, data.iov_len, nonce, authpubkey, sk), "crypto_box_easy()");
 
