@@ -53,14 +53,11 @@ ssize_t wire_pack(struct iovec *data, struct iovec *iovs[], int iov_count, uint8
 	return wire_pack_pre(data, iovs, iov_count, pre, 2);
 }
 
-ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count,
-		uint8_t *op, uint8_t *flags)
+ssize_t wire_unpack_7bit(struct iovec *data, struct iovec iovs[], int iov_count, size_t offset)
 {
-	void *ptr = data->iov_base;
+	void *ptr = data->iov_base + offset;
 	size_t len;
 	void *endptr = data->iov_base + data->iov_len;
-	*op = ((uint8_t *)ptr++)[0];
-	*flags = ((uint8_t *)ptr++)[0];
 	for (int i = 0; i < iov_count && ptr < endptr; i++) {
 		uint64_t n = 0, shift = 0;
 		uint8_t b;
@@ -83,4 +80,26 @@ ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count,
 		ptr += len;
 	}
 	return data->iov_len;
+}
+
+ssize_t wire_unpack_pre(struct iovec *data, struct iovec iovs[], int iov_count,
+		struct iovec pre[], int pre_count)
+{
+	size_t offset = 0;
+	for (int i = 0; i < pre_count; i++) {
+		memcpy(pre[i].iov_base, data->iov_base + offset, pre[i].iov_len);
+		offset += pre[i].iov_len;
+	}
+	return wire_unpack_7bit(data, iovs, iov_count, offset);
+}
+
+ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count,
+		uint8_t *op, uint8_t *flags)
+{
+	struct iovec pre[2] = {0};
+	pre[0].iov_len = 1;
+	pre[0].iov_base = op;
+	pre[1].iov_len = 1;
+	pre[1].iov_base = flags;
+	return wire_unpack_pre(data, iovs, iov_count, pre, 2);
 }

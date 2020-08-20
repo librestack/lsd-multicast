@@ -30,5 +30,8 @@ ssize_t wire_pack_7bit(struct iovec *data, struct iovec *iovs[], int iov_count, 
 ssize_t wire_pack_pre(struct iovec *data, struct iovec *iovs[], int iov_count,
 		struct iovec pre[], int pre_count);
 ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count, uint8_t *op, uint8_t *flags);
+ssize_t wire_unpack_7bit(struct iovec *data, struct iovec iovs[], int iov_count, size_t offset);
+ssize_t wire_unpack_pre(struct iovec *data, struct iovec iovs[], int iov_count,
+		struct iovec pre[], int pre_count);
 
 #endif /* _LSDM_WIRE_H */
