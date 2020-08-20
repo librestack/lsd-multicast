@@ -19,7 +19,7 @@ int main()
 
 	/* create new cap token */
 	struct iovec cap_sig = {0}; /* signed token */
-	struct iovec clientkey = { .iov_base = "wibble" }; /* TODO */
+	struct iovec clientkey = { .iov_base = "d557f11f52c78a151495aee584791d281bb29efb66304932a3c509468588d87c2b0bace3b52f95177d40122f03330ebab9eb42c809e17becb34aea3c1caf0b3b" };
 	clientkey.iov_len = strlen(clientkey.iov_base);
 	struct iovec serv = { .iov_base = "service" };
 	serv.iov_len = strlen(serv.iov_base);
@@ -59,8 +59,6 @@ int main()
 	test_expectiov(&clientkey, &iovs[0]);
 	test_expectiov(&serv, &iovs[1]);
 
-	/* TODO: check senderkey */
-	/* TODO: check service */
 	/* TODO: check flags */
 
 	free(cap);

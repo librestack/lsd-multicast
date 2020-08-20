@@ -359,7 +359,6 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *clientkey, struct iovec
 	expires = htobe64(time(NULL) + config.handlers->token_duration);
 	wire_pack_pre(&data, caps, iov_count, pre, pre_count);
 
-
 	cap_sig = malloc(crypto_sign_BYTES + data.iov_len);
 	auth_key_sign_sk_bin(sk, config.handlers->key_private);
 	if (crypto_sign(cap_sig, &tok_len, data.iov_base, data.iov_len, sk)) {
