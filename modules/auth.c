@@ -268,10 +268,10 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	DEBUG("wire_unpack() fieldcount: %i", payload->fieldcount);
 	DEBUG("wire_unpack() done, dumping fields...");
 
-	for (int i = 1; i < payload->fieldcount; i++) {
+	for (int i = 0; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %zu bytes", i, payload->fields[i].iov_len);
 	}
-	for (int i = 1; i < payload->fieldcount; i++) {
+	for (int i = 0; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %.*s", i, (int)payload->fields[i].iov_len, (char *)payload->fields[i].iov_base);
 	}
 
@@ -429,11 +429,11 @@ int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 
 int auth_user_token_set(char *userid, auth_user_token_t *token)
 {
-	if (auth_field_set(token->hextoken, AUTH_HEXLEN, "user", userid, AUTH_HEXLEN)) {
+	if (auth_field_set(token->hextoken, AUTH_HEXLEN - 1, "user", userid, AUTH_HEXLEN)) {
 		DEBUG ("error setting user token");
 		return -1;
 	}
-	if (auth_field_set(token->hextoken, AUTH_HEXLEN, "expires",
+	if (auth_field_set(token->hextoken, AUTH_HEXLEN - 1, "expires",
 			&token->expires, sizeof token->expires))
 	{
 		DEBUG ("error setting user token expiry");
@@ -449,12 +449,14 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	struct iovec expires = {0};
 	char *userid;
 	auth_user_token_t tok = {0};
-	DEBUG("search for token '%.*s'", (int)token->iov_len, (char *)token->iov_base);
-	if (auth_field_getv(token->iov_base, AUTH_HEXLEN, "user", &user)) {
+	//DEBUG("search for token '%.*s'", (int)token->iov_len, (char *)token->iov_base);
+	/* FIXME: token->iov_base is uninitialized */
+	DEBUG("search for token '%.*s'", AUTH_HEXLEN - 1, (char *)token->iov_base);
+	if (auth_field_getv(token->iov_base, token->iov_len, "user", &user)) {
 		DEBUG ("user token not found");
 		return -1;
 	}
-	if (auth_field_getv(token->iov_base, AUTH_HEXLEN, "expires", &expires)) {
+	if (auth_field_getv(token->iov_base, token->iov_len, "expires", &expires)) {
 		DEBUG ("user token expiry not found");
 		return -1;
 	}

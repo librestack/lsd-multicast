@@ -32,15 +32,29 @@ void *testthread(void *arg)
 	test_assert(sodium_init() != -1, "sodium_init()");
 	test_assert(crypto_box_keypair(pk, sk) != -1, "crypto_box_keypair()");
 
+	/* create user + token to validate */
+	auth_init();
+	auth_user_token_t token = {0};
+	auth_payload_t p = {0};
+	p.senderkey.iov_base = config.handlers->key_public;
+	p.senderkey.iov_len = strlen(config.handlers->key_public);
+	char userid[AUTH_HEXLEN];
+	struct iovec mail = { .iov_base = "posty@example.com" };
+	mail.iov_len = strlen(mail.iov_base);
+	auth_user_create(userid, &mail, NULL);
+	test_assert(auth_user_token_new(&token, &p) == 0, "auth_user_token_new()");
+	test_assert(auth_user_token_set("fred", &token) == 0, "auth_user_token_set()");
+	auth_free();
+
 	/* (1) build packet */
-	struct iovec tok = {0};
+	struct iovec tok = { .iov_base = token.hextoken };
 	struct iovec pass = { .iov_base = "password" };
 	struct iovec *iovs[] = { &tok, &pass };
 	const int iov_count = sizeof iovs / sizeof iovs[0];
 	uint8_t op = AUTH_OP_USER_UNLOCK;
 	uint8_t flags = 0;
 	ssize_t len;
-	for (int i = 1; i < iov_count; i++) {
+	for (int i = 0; i < iov_count; i++) {
 		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
 	}
 	//len = wire_pack(&data, iovs, iov_count, op, flags);
@@ -133,8 +147,10 @@ int main()
 	if (pid)
 		runtests(pid);
 	else {
+		auth_init();
 		close(1); /* prevent server messing up test output */
 		assert(server_start() == 0);
+		auth_free();
 	}
 	config_free();
 	return fails;
