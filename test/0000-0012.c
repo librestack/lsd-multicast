@@ -49,14 +49,7 @@ void runtests()
 	unsigned char nonce[crypto_box_NONCEBYTES];
 	const size_t cipherlen = crypto_box_MACBYTES + data.iov_len;
 	unsigned char ciphertext[cipherlen];
-
-	sodium_hex2bin(authpubkey,
-			crypto_box_PUBLICKEYBYTES,
-			authpubhex,
-			crypto_box_PUBLICKEYBYTES * 2,
-			NULL,
-			0,
-			NULL);
+	auth_key_crypt_pk_bin(authpubkey, authpubhex);
 	randombytes_buf(nonce, sizeof nonce);
 	test_assert(!crypto_box_easy(ciphertext, (unsigned char *)data.iov_base, data.iov_len, nonce, authpubkey, sk), "crypto_box_easy()");
 
@@ -71,9 +64,13 @@ void runtests()
 	lc_msg_init_data(&msg, pkt.iov_base, pkt.iov_len, NULL, NULL);
 
 	auth_payload_t p = {0};
-	struct iovec fields[1];
+	struct iovec fields[iov_count];
 	p.fields = fields;
 	test_assert(auth_decode_packet(&msg, &p) == 0, "auth_decode_packet()");
+	/* verify every field matches what we packed */
+	for (int i = 1; i < p.fieldcount; i++) { /* skip binary first field */
+		test_expectiov(iovs[i], &fields[i]);
+	}
 
 	free(pkt.iov_base);
 	free(data.iov_base);
