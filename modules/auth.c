@@ -243,6 +243,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	struct iovec outer[outerfields] = {0};
 
 	if (wire_unpack(&pkt, outer, outerfields, &op, &flags) == -1) {
+		perror("wire_unpack()");
 		errno = EBADMSG;
 		return -1;
 	}
@@ -250,6 +251,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	if ((outer[fld_key].iov_len != crypto_box_PUBLICKEYBYTES)
 	||  (outer[fld_nonce].iov_len != crypto_box_NONCEBYTES)
 	||  (outer[fld_payload].iov_len < 1)) {
+		ERROR("no payload");
 		errno = EBADMSG;
 		return -1;
 	}
@@ -270,6 +272,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 				nonce, payload->senderkey.iov_base, privatekey) != 0)
 	{
 		ERROR("packet decryption failed");
+		errno = EBADMSG;
 		return -1;
 	}
 	DEBUG("auth module decryption successful");
@@ -279,7 +282,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	struct iovec clearpkt = {0};
 	clearpkt.iov_base = payload->data;
 	clearpkt.iov_len = outer[fld_payload].iov_len - crypto_box_MACBYTES;
-	if (wire_unpack_pre(&clearpkt, payload->fields, payload->fieldcount, NULL, 0) == -1)
+	if (payload->fieldcount && wire_unpack_pre(&clearpkt, payload->fields, payload->fieldcount, NULL, 0) == -1)
 		return -1;
 	DEBUG("wire_unpack() fieldcount: %i", payload->fieldcount);
 	DEBUG("wire_unpack() done, dumping fields...");
@@ -303,7 +306,7 @@ int auth_reply(struct iovec *repl, struct iovec *key, struct iovec *data, uint8_
 	sock = lc_socket_new(lctx);
 	chan = lc_channel_nnew(lctx, key->iov_base, crypto_box_PUBLICKEYBYTES);
 	lc_channel_bind(sock, chan);
-	lc_msg_init_size(&response, 2); /* just an opcode + flag really */
+	lc_msg_init_size(&response, 2); /* FIXME: always reply with payload */
 	((uint8_t *)response.data)[0] = op;	/* TODO: response opcode */
 	((uint8_t *)response.data)[1] = flags;	/* TODO: define response codes */
 	int opt = 1; /* set loopback in case we're on the same host as the sender */
@@ -618,9 +621,6 @@ static void auth_op_auth_service(lc_message_t *msg)
 	struct iovec fields[fieldcount] = {0};
 	struct iovec userid = {0};
 	struct iovec cap = {0};
-	lc_socket_t *sock = NULL;
-	lc_channel_t *chan = NULL;
-	lc_message_t response = {0};
 	auth_payload_t p = {0};
 	p.fields = fields;
 	p.fieldcount = fieldcount;
@@ -650,17 +650,8 @@ static void auth_op_auth_service(lc_message_t *msg)
 
 	/* TODO: logfile entry */
 
-	DEBUG("response to requestor");
-	sock = lc_socket_new(lctx);
-	chan = lc_channel_nnew(lctx, p.senderkey.iov_base, crypto_box_PUBLICKEYBYTES);
-	lc_channel_bind(sock, chan);
-	lc_msg_init_size(&response, 2); /* just an opcode + flag really */
-	((uint8_t *)response.data)[0] = AUTH_OP_NOOP;	/* TODO: response opcode */
-	((uint8_t *)response.data)[1] = 7;		/* TODO: define response codes */
-	int opt = 1; /* set loopback in case we're on the same host as the sender */
-	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
-	lc_msg_send(chan, &response);
-	lc_msg_free(&response);
+	struct iovec data = {0};
+	auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
 	free(p.data);
 };
 
