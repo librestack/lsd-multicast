@@ -103,9 +103,13 @@ void *testthread(void *arg)
 	test_assert(msg_repl.len > 0, "message has nonzero length");
 	test_assert(((uint8_t *)msg_repl.data)[0] == AUTH_OP_NOOP, "opcode");
 	test_assert(((uint8_t *)msg_repl.data)[1] == 0x7, "flags");
+
+	/* (6) decrypt reply */
+	test_log("decrypt reply");
+	auth_payload_t reply = {0};
+	test_assert(auth_decode_packet(&msg_repl, &reply) == 0, "decrypt server reply");
 	lc_msg_free(&msg_repl);
 
-	/* TODO: (6) decrypt reply */
 	/* TODO: (7) handle response/error */
 
 	/* we finished quickly, wake the test runner */
@@ -121,7 +125,7 @@ void sighandler(int sig)
 
 void runtests(pid_t pid)
 {
-	struct timespec t = { 2, 0 }; /* crypto code is slow under valgrind */
+	struct timespec t = { 5, 0 }; /* crypto code is slow under valgrind */
 	void *ret = NULL;
 	struct sigaction sa = { .sa_handler = sighandler };
 	sigaction(SIGINT, &sa, NULL);
