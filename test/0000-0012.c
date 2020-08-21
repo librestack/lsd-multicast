@@ -43,8 +43,7 @@ void runtests()
 	test_assert(len > 0, "wire_pack_pre() returned %i", len);
 
 	/* encrypt packet */
-	//char *authpubhex = h->key_public;
-	char *authpubhex = "d20d09899e69d4adf5069099cad784499802b0235c0aa7398b9d0622bc18a676";
+	char *authpubhex = h->key_public;
 	unsigned char authpubkey[crypto_box_PUBLICKEYBYTES];
 	unsigned char nonce[crypto_box_NONCEBYTES];
 	const size_t cipherlen = crypto_box_MACBYTES + data.iov_len;
