@@ -467,17 +467,19 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	auth_user_token_t tok = {0};
 	DEBUG("search for token '%.*s'", AUTH_HEXLEN - 1, (char *)token->iov_base);
 	if (auth_field_getv(token->iov_base, token->iov_len, "user", &user)) {
-		DEBUG ("user token not found");
+		DEBUG("user token not found");
 		return -1;
 	}
 	if (auth_field_getv(token->iov_base, token->iov_len, "expires", &expires)) {
-		DEBUG ("user token expiry not found");
+		DEBUG("user token expiry not found");
 		return -1;
 	}
 	tok.expires = *((uint64_t *)expires.iov_base);
 	free(expires.iov_base);
 	if (!auth_user_token_valid(&tok)) {
-		return -1;
+		DEBUG("invalid token");
+		ret = -1;
+		goto delete_token;
 	}
 	DEBUG("valid user token");
 	userid = strndup(user.iov_base, user.iov_len);
@@ -486,20 +488,20 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	DEBUG("password set for user %s", userid);
 	free(userid);
 	free(user.iov_base);
-
+delete_token:
 	/* tokens are single-user - delete */
 	if (auth_field_delv(token->iov_base, token->iov_len, "user", &user)) {
-		DEBUG ("user token not deleted");
+		ERROR("user token not deleted");
 		return -1;
 	}
-	DEBUG ("user token deleted");
+	DEBUG("user token deleted");
 
 	return ret;
 }
 
 int auth_user_token_valid(auth_user_token_t *token)
 {
-	return (be64toh(token->expires) <= time(NULL) + 60 * 15);
+	return (be64toh(token->expires) >= time(NULL));
 }
 
 static void auth_op_noop(lc_message_t *msg)

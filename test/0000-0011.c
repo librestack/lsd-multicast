@@ -65,7 +65,17 @@ int main()
 			"auth_user_token_use() - set password");
 	test_assert(auth_user_token_use(&usertoken, &pass) == -1,
 			"auth_user_token_use() - use same token twice");
-	/* TODO: expired token */
+
+	test_log("trying expired token");
+	test_assert(auth_user_token_new(&tok, &payload) == 0,
+			"auth_user_token_new()");
+	time_t expired = time(NULL) - 1;
+	tok.expires = htobe64((uint64_t)expired);
+	test_assert(!auth_user_token_valid(&tok), "ensure token invalid (expired)");
+	test_assert(auth_user_token_set(userid, &tok) == 0,
+			"auth_user_token_set()");
+	test_assert(auth_user_token_use(&usertoken, &pass) == -1,
+			"auth_user_token_use() - expired token");
 
 	auth_free();
 	config_free();
