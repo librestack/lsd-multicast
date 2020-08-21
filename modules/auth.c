@@ -534,6 +534,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	}
 	struct iovec data = {0};
 	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
+	free(p.data);
 };
 
 static void auth_op_user_delete(lc_message_t *msg)
@@ -563,6 +564,7 @@ static void auth_op_user_unlock(lc_message_t *msg)
 	}
 	auth_user_token_use(&fields[tok], &fields[pass]);
 	auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
+	free(p.data);
 };
 
 static void auth_op_key_add(lc_message_t *msg)
@@ -637,7 +639,7 @@ static void auth_op_auth_service(lc_message_t *msg)
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
 	lc_msg_free(&response);
-
+	free(p.data);
 };
 
 void init(config_t *c)
