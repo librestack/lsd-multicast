@@ -50,6 +50,18 @@ void auth_free()
 	lc_ctx_free(lctx);
 }
 
+int auth_field_del(char *key, size_t keylen, char *field, void *data, size_t datalen)
+{
+	int ret = 0;
+	unsigned char hash[crypto_generichash_BYTES] = "";
+	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
+	if ((ret = lc_db_del(lctx, config.handlers->dbname, hash, sizeof hash, data, datalen))) {
+		errno = ret;
+		ret = -1;
+	}
+	return ret;
+}
+
 int auth_field_get(char *key, size_t keylen, char *field, void *data, size_t *datalen)
 {
 	int ret = 0;
@@ -60,6 +72,11 @@ int auth_field_get(char *key, size_t keylen, char *field, void *data, size_t *da
 		ret = -1;
 	}
 	return ret;
+}
+
+int auth_field_delv(char *key, size_t keylen, char *field, struct iovec *data)
+{
+	return auth_field_del(key, keylen, field, data->iov_base, data->iov_len);
 }
 
 int auth_field_getv(char *key, size_t keylen, char *field, struct iovec *data)
@@ -448,8 +465,6 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	struct iovec expires = {0};
 	char *userid;
 	auth_user_token_t tok = {0};
-	//DEBUG("search for token '%.*s'", (int)token->iov_len, (char *)token->iov_base);
-	/* FIXME: token->iov_base is uninitialized */
 	DEBUG("search for token '%.*s'", AUTH_HEXLEN - 1, (char *)token->iov_base);
 	if (auth_field_getv(token->iov_base, token->iov_len, "user", &user)) {
 		DEBUG ("user token not found");
@@ -468,11 +483,16 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	userid = strndup(user.iov_base, user.iov_len);
 	if (auth_user_pass_set(userid, pass))
 		ret = -1;
+	DEBUG("password set for user %s", userid);
 	free(userid);
 	free(user.iov_base);
-	DEBUG("password set");
 
-	/* TODO: delete token */
+	/* tokens are single-user - delete */
+	if (auth_field_delv(token->iov_base, token->iov_len, "user", &user)) {
+		DEBUG ("user token not deleted");
+		return -1;
+	}
+	DEBUG ("user token deleted");
 
 	return ret;
 }
