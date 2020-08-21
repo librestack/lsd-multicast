@@ -68,10 +68,10 @@ void runtests()
 	p.fieldcount = iov_count;
 	test_assert(auth_decode_packet(&msg, &p) == 0, "auth_decode_packet()");
 	/* verify every field matches what we packed */
-	for (int i = 1; i < p.fieldcount; i++) { /* skip binary first field */
+	for (int i = 0; i < p.fieldcount; i++) {
 		test_expectiov(iovs[i], &fields[i]);
 	}
-
+	free(p.data);
 	free(pkt.iov_base);
 	free(data.iov_base);
 }

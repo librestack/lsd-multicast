@@ -73,6 +73,7 @@ struct auth_payload_s {
 	struct iovec	senderkey;
 	int		pre_count;
 	int		fieldcount;
+	void		*data;
 	struct iovec	*pre;
 	struct iovec	*fields;
 };

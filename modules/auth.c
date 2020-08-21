@@ -242,13 +242,12 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 		return -1;
 	}
 
-	unsigned char data[outer[fld_payload].iov_len - crypto_box_MACBYTES];
+	payload->data = malloc(outer[fld_payload].iov_len - crypto_box_MACBYTES);
 	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
 	payload->senderkey = outer[fld_key];
 	unsigned char *nonce = outer[fld_nonce].iov_base;
 	auth_key_crypt_sk_bin(privatekey, config.handlers->key_private);
-	memset(data, 0, sizeof data);
-	if (crypto_box_open_easy(data,
+	if (crypto_box_open_easy(payload->data,
 				outer[fld_payload].iov_base,
 				outer[fld_payload].iov_len,
 				nonce, payload->senderkey.iov_base, privatekey) != 0)
@@ -261,7 +260,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	/* unpack inner data fields */
 	DEBUG("auth module unpacking fields");
 	struct iovec clearpkt = {0};
-	clearpkt.iov_base = data;
+	clearpkt.iov_base = payload->data;
 	clearpkt.iov_len = outer[fld_payload].iov_len - crypto_box_MACBYTES;
 	if (wire_unpack_pre(&clearpkt, payload->fields, payload->fieldcount, NULL, 0) == -1)
 		return -1;
