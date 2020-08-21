@@ -532,9 +532,9 @@ static void auth_op_user_add(lc_message_t *msg)
 		return;
 	}
 
-	char userid[AUTH_HEXLEN];
+	char userid[AUTH_HEXLEN] = "";
 	auth_user_create(userid, &fields[mail], &fields[pass]);
-	auth_user_token_t token;
+	auth_user_token_t token = {0};
 	auth_user_token_new(&token, &p);
 	auth_user_token_set(userid, &token);
 	DEBUG("user created");
