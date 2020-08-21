@@ -487,8 +487,8 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 		ret = -1;
 	DEBUG("password set for user %s", userid);
 	free(userid);
-	free(user.iov_base);
 delete_token:
+	free(user.iov_base);
 	/* tokens are single-user - delete */
 	if (auth_field_delv(token->iov_base, token->iov_len, "user", &user)) {
 		ERROR("user token not deleted");
