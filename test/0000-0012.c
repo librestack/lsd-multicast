@@ -15,7 +15,7 @@
 void runtests()
 {
 	lc_message_t msg;
-	struct iovec data;
+	struct iovec data = {0};
 	handler_t *h = config.handlers;
 	test_assert(h != NULL, "handlers");
 
@@ -39,8 +39,8 @@ void runtests()
 	for (int i = 1; i < iov_count; i++) {
 		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
 	}
-	len = wire_pack(&data, iovs, iov_count, op, flags);
-	test_assert(len > 0, "wire_pack() returned %i", len);
+	len = wire_pack_pre(&data, iovs, iov_count, NULL, 0);
+	test_assert(len > 0, "wire_pack_pre() returned %i", len);
 
 	/* encrypt packet */
 	//char *authpubhex = h->key_public;
@@ -66,6 +66,7 @@ void runtests()
 	auth_payload_t p = {0};
 	struct iovec fields[iov_count];
 	p.fields = fields;
+	p.fieldcount = iov_count;
 	test_assert(auth_decode_packet(&msg, &p) == 0, "auth_decode_packet()");
 	/* verify every field matches what we packed */
 	for (int i = 1; i < p.fieldcount; i++) { /* skip binary first field */
