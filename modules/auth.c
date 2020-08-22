@@ -706,41 +706,17 @@ void finit(void)
 void handle_msg(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
-
 	DEBUG("%zu bytes received", msg->len);
-
-	/* TODO: read opcode and pass to handler */
 	uint8_t opcode = ((uint8_t *)msg->data)[0];
 	uint8_t flags = ((uint8_t *)msg->data)[1];
 	DEBUG("opcode read: %u", opcode);
 	DEBUG("flags read: %u", flags);
-
 	switch (opcode) {
 		AUTH_OPCODES(AUTH_OPCODE_FUN)
 	default:
 		ERROR("Invalid auth opcode received: %u", opcode);
 	}
-
-	DEBUG("handle_msg() - after the handler");
-
-	//lc_ctx_t *lctx = lc_ctx_new();
-	//lc_ctx_t *lctx = lc_channel_ctx(msg->chan);
-	//lc_socket_t *sock = lc_channel_socket(msg->chan);
-	//lc_socket_t *sock = lc_socket_new(lctx);
-	//lc_channel_t *chan_repl = lc_channel_new(lctx, "repl");
-	//DEBUG("auth.so binding socket");
-	//lc_channel_bind(sock, chan_repl);
-	//lc_msg_send(chan_repl, msg);
-
-	/* TODO:
-	 * - decrypt
-	 * - call opcode handler
-	 * - unpack
-	 */
-
-	//lc_channel_unbind(chan_repl);
-
-	//DEBUG("message says '%.*s'", (int)msg->len, (char *)msg->data);
+	DEBUG("handle_msg() - handler exiting");
 }
 
 void handle_err(int err)
