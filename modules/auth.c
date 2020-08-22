@@ -283,6 +283,7 @@ int auth_decode_packet_key(lc_message_t *msg, auth_payload_t *payload, unsigned 
 	if (payload->fieldcount && wire_unpack_pre(&clearpkt, payload->fields, payload->fieldcount, NULL, 0) == -1)
 		return -1;
 	DEBUG("wire_unpack() fieldcount: %i", payload->fieldcount);
+#if 0
 	DEBUG("wire_unpack() done, dumping fields...");
 
 	for (int i = 0; i < payload->fieldcount; i++) {
@@ -291,7 +292,7 @@ int auth_decode_packet_key(lc_message_t *msg, auth_payload_t *payload, unsigned 
 	for (int i = 0; i < payload->fieldcount; i++) {
 		DEBUG("[%i] %.*s", i, (int)payload->fields[i].iov_len, (char *)payload->fields[i].iov_base);
 	}
-
+#endif
 	return 0;
 }
 
@@ -501,6 +502,7 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 		DEBUG("user token not found");
 		return -1;
 	}
+	DEBUG("token matches user '%.*s'", (int)user.iov_len, (char *)user.iov_base);
 	if (auth_field_getv(token->iov_base, token->iov_len, "expires", &expires)) {
 		DEBUG("user token expiry not found");
 		return -1;
@@ -564,11 +566,13 @@ static void auth_op_user_add(lc_message_t *msg)
 	}
 
 	char userid[AUTH_HEXLEN] = "";
-	auth_user_create(userid, &fields[mail], &fields[pass]);
+	if (auth_user_create(userid, &fields[mail], &fields[pass])) {
+		perror("auth_user_create");
+	}
 	auth_user_token_t token = {0};
 	auth_user_token_new(&token, &p);
 	auth_user_token_set(userid, &token);
-	DEBUG("user created");
+	DEBUG("user created '%s'", userid);
 
 	/* TODO: logfile entry */
 
@@ -588,6 +592,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	struct iovec data = {0};
 	struct iovec iov = { .iov_base = "hi", .iov_len = 2 };
 	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
+		perror("wire_pack_pre()");
 		return;
 	}
 	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
@@ -607,10 +612,12 @@ static void auth_op_user_lock(lc_message_t *msg)
 static void auth_op_user_unlock(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
-	struct iovec tok = {0};
-	struct iovec pass = {0};
-	struct iovec fields[] = { tok, pass };
-	const int fieldcount = sizeof fields / sizeof fields[0];
+	enum {
+		tok,
+		pass,
+		fieldcount
+	};
+	struct iovec fields[fieldcount] = {0};
 	struct iovec data = {0};
 	struct iovec iov = { .iov_base = "hi", .iov_len = 2 };
 	auth_payload_t p = { .fields = fields, .fieldcount = fieldcount };
@@ -618,7 +625,7 @@ static void auth_op_user_unlock(lc_message_t *msg)
 		perror("auth_decode_packet()");
 		return;
 	}
-	auth_user_token_use(&tok, &pass);
+	auth_user_token_use(&fields[tok], &fields[pass]);
 	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
 		return;
 	}
