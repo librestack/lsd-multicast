@@ -353,7 +353,8 @@ int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
 	struct iovec nopass = { .iov_base = "*", .iov_len = 1 };
 	if (auth_field_getv(user->iov_base, AUTH_HEXLEN, "pass", &pwhash))
 	{
-		DEBUG("unable to find password for user");
+		DEBUG("unable to find password for user '%.*s",
+				(int)user->iov_len, (char *)user->iov_base);
 		pw = &nopass; /* preserve constant time */
 	}
 	else if (pw->iov_len == 0) {
@@ -653,13 +654,15 @@ static void auth_op_key_replace(lc_message_t *msg)
 static void auth_op_auth_service(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
-	struct iovec repl = {0};
-	struct iovec user = {0};
-	struct iovec mail = {0};
-	struct iovec pass = {0};
-	struct iovec serv = {0};
-	struct iovec fields[] = { repl, user, mail, pass, serv };
-	const int fieldcount = sizeof fields / sizeof fields[0];
+	enum {
+		repl,
+		user,
+		mail,
+		pass,
+		serv,
+		fieldcount
+	};
+	struct iovec fields[fieldcount] = {0};
 	struct iovec userid = {0};
 	struct iovec cap = {0};
 	auth_payload_t p = {0};
@@ -670,21 +673,22 @@ static void auth_op_auth_service(lc_message_t *msg)
 		perror("auth_decode_packet()");
 		return;
 	}
-	if (user.iov_len > 0)
-		userid = user;
+	if (fields[user].iov_len > 0)
+		userid = fields[user];
 	else {
 		/* user not supplied, look up from mail address */
-		if (auth_user_bymail(&mail, &userid)) {
-			ERROR("no user found for '%.*s'", (int)mail.iov_len,
-					(char *)mail.iov_base);
+		if (auth_user_bymail(&fields[mail], &userid)) {
+			ERROR("no user found for '%.*s'", (int)fields[mail].iov_len,
+					(char *)fields[mail].iov_base);
 			return;
 		}
 	}
-	if (auth_user_pass_verify(&userid, &pass)) {
+	if (auth_user_pass_verify(&userid, &fields[pass])) {
 		ERROR("failed login for user %.*s", (int)userid.iov_len, (char *)userid.iov_base);
 		return;
 	}
-	if (auth_serv_token_new(&cap, p.senderkey.iov_base, &serv)) {
+	DEBUG("successful login for user %.*s", (int)userid.iov_len, (char *)userid.iov_base);
+	if (auth_serv_token_new(&cap, p.senderkey.iov_base, &fields[serv])) {
 		perror("auth_serv_token_new()");
 		return;
 	}
