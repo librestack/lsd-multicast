@@ -502,6 +502,7 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 		DEBUG("user token not found");
 		return -1;
 	}
+	assert(user.iov_len > 0);
 	DEBUG("token matches user '%.*s'", (int)user.iov_len, (char *)user.iov_base);
 	if (auth_field_getv(token->iov_base, token->iov_len, "expires", &expires)) {
 		DEBUG("user token expiry not found");
@@ -627,6 +628,7 @@ static void auth_op_user_unlock(lc_message_t *msg)
 	}
 	auth_user_token_use(&fields[tok], &fields[pass]);
 	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
+		perror("wire_pack_pre()");
 		return;
 	}
 	auth_reply(&p.senderkey, &p.senderkey, &data, 42, 0x9);
