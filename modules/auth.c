@@ -416,20 +416,24 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *clientkey, struct iovec
 	unsigned long long tok_len = 0;
 	unsigned char *cap_sig;
 	struct iovec data;
-	struct iovec *caps[] = { clientkey, serv };
+	struct iovec caps[] = { *clientkey, *serv };
 	const int iov_count = sizeof caps / sizeof caps[0];
 	uint64_t expires;
 	struct iovec pre[1] = {0};
 	const int pre_count = sizeof pre / sizeof pre[0];
 	pre[0].iov_base = &expires;
 	pre[0].iov_len = sizeof expires;
-
-	/* TODO: permission bits */
-
 	expires = htobe64(time(NULL) + config.handlers->token_duration);
-	wire_pack_pre(&data, *caps, iov_count, pre, pre_count);
-
+	if (wire_pack_pre(&data, caps, iov_count, pre, pre_count) == -1) {
+		perror("wire_pack_pre()");
+		return -1;
+	}
 	cap_sig = malloc(crypto_sign_BYTES + data.iov_len);
+	if (cap_sig == NULL) {
+		free(data.iov_base);
+		errno = ENOMEM;
+		return -1;
+	}
 	auth_key_sign_sk_bin(sk, config.handlers->key_private);
 	if (crypto_sign(cap_sig, &tok_len, data.iov_base, data.iov_len, sk)) {
 		ERROR("crypto_sign() failed");
@@ -688,7 +692,7 @@ static void auth_op_auth_service(lc_message_t *msg)
 		return;
 	}
 	DEBUG("successful login for user %.*s", (int)userid.iov_len, (char *)userid.iov_base);
-	if (auth_serv_token_new(&cap, p.senderkey.iov_base, &fields[serv])) {
+	if (auth_serv_token_new(&cap, &p.senderkey, &fields[serv])) {
 		perror("auth_serv_token_new()");
 		return;
 	}

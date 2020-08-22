@@ -37,6 +37,10 @@ ssize_t wire_pack_pre(struct iovec *data, struct iovec iovs[], int iov_count,
 			data->iov_len++; /* extra length byte */
 	}
 	ptr = data->iov_base = calloc(1, data->iov_len + 1);
+	if (data->iov_base == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
 	for (int i = 0; i < pre_count; i++) {
 		memcpy(ptr, pre[i].iov_base, pre[i].iov_len);
 		ptr += pre[i].iov_len;
