@@ -232,15 +232,13 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 {
 	/* unpack outer packet [opcode][flags] + [public key][nonce][payload] */
 	DEBUG("auth module unpacking outer packet of %zu bytes", msg->len);
-	enum { /* outer fields */
-		fld_key,
-		fld_nonce,
-		fld_payload,
-		outerfields
-	};
+	struct iovec fld_key = {0};
+	struct iovec fld_nonce = {0};
+	struct iovec fld_payload = {0};
+	struct iovec outer[] = { fld_key, fld_nonce, fld_payload };
+	const int outerfields = sizeof outer / sizeof outer[0];
 	struct iovec pkt = { .iov_base = msg->data, .iov_len = msg->len };
 	uint8_t op, flags;
-	struct iovec outer[outerfields] = {0};
 
 	if (wire_unpack(&pkt, outer, outerfields, &op, &flags) == -1) {
 		perror("wire_unpack()");
@@ -248,9 +246,9 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 		return -1;
 	}
 	/* outer fields are all required */
-	if ((outer[fld_key].iov_len != crypto_box_PUBLICKEYBYTES)
-	||  (outer[fld_nonce].iov_len != crypto_box_NONCEBYTES)
-	||  (outer[fld_payload].iov_len < 1)) {
+	if ((fld_key.iov_len != crypto_box_PUBLICKEYBYTES)
+	||  (fld_nonce.iov_len != crypto_box_NONCEBYTES)
+	||  (fld_payload.iov_len < 1)) {
 		ERROR("no payload");
 		errno = EBADMSG;
 		return -1;
@@ -261,14 +259,14 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 		return -1;
 	}
 
-	payload->data = malloc(outer[fld_payload].iov_len - crypto_box_MACBYTES);
+	payload->data = malloc(fld_payload.iov_len - crypto_box_MACBYTES);
 	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
-	payload->senderkey = outer[fld_key];
-	unsigned char *nonce = outer[fld_nonce].iov_base;
+	payload->senderkey = fld_key;
+	unsigned char *nonce = fld_nonce.iov_base;
 	auth_key_crypt_sk_bin(privatekey, config.handlers->key_private);
 	if (crypto_box_open_easy(payload->data,
-				outer[fld_payload].iov_base,
-				outer[fld_payload].iov_len,
+				fld_payload.iov_base,
+				fld_payload.iov_len,
 				nonce, payload->senderkey.iov_base, privatekey) != 0)
 	{
 		ERROR("packet decryption failed");
@@ -281,7 +279,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	DEBUG("auth module unpacking fields");
 	struct iovec clearpkt = {0};
 	clearpkt.iov_base = payload->data;
-	clearpkt.iov_len = outer[fld_payload].iov_len - crypto_box_MACBYTES;
+	clearpkt.iov_len = fld_payload.iov_len - crypto_box_MACBYTES;
 	if (payload->fieldcount && wire_unpack_pre(&clearpkt, payload->fields, payload->fieldcount, NULL, 0) == -1)
 		return -1;
 	DEBUG("wire_unpack() fieldcount: %i", payload->fieldcount);
@@ -536,28 +534,26 @@ static void auth_op_noop(lc_message_t *msg)
 static void auth_op_user_add(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
-	enum {
-		repl,
-		user,
-		mail,
-		pass,
-		serv,
-		fieldcount
-	};
-	struct iovec fields[fieldcount] = {0};
+	struct iovec repl = {0};
+	struct iovec user = {0};
+	struct iovec mail = {0};
+	struct iovec pass = {0};
+	struct iovec serv = {0};
+	struct iovec fields[] = { repl, user, mail, pass, serv };
+	const int fieldcount = sizeof fields / sizeof fields[0];
 	auth_payload_t p = { .fields = fields, .fieldcount = fieldcount };
 
 	if (auth_decode_packet(msg, &p) == -1) {
 		perror("auth_decode_packet()");
 		return;
 	}
-	if (!auth_valid_email(fields[mail].iov_base, fields[mail].iov_len)) {
+	if (!auth_valid_email(mail.iov_base, mail.iov_len)) {
 		ERROR("invalid email address");
 		return;
 	}
 
 	char userid[AUTH_HEXLEN] = "";
-	auth_user_create(userid, &fields[mail], &fields[pass]);
+	auth_user_create(userid, &mail, &pass);
 	auth_user_token_t token = {0};
 	auth_user_token_new(&token, &p);
 	auth_user_token_set(userid, &token);
@@ -568,7 +564,7 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	DEBUG("emailing token");
 	if (!config.testmode) {
-		char *to = strndup(fields[mail].iov_base, fields[mail].iov_len);
+		char *to = strndup(mail.iov_base, mail.iov_len);
 		char subject[] = "Librecast Live - Confirm Your Email Address";
 		if (auth_mail_token(subject, to, token.hextoken) == -1) {
 			ERROR("error in auth_mail_token()");
@@ -583,7 +579,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
 		return;
 	}
-	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
+	auth_reply(&repl, &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
 	free(p.data);
 };
 
@@ -600,20 +596,18 @@ static void auth_op_user_lock(lc_message_t *msg)
 static void auth_op_user_unlock(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
-	enum {
-		tok,
-		pass,
-		fieldcount
-	};
+	struct iovec tok = {0};
+	struct iovec pass = {0};
+	struct iovec fields[] = { tok, pass };
+	const int fieldcount = sizeof fields / sizeof fields[0];
 	struct iovec data = {0};
 	struct iovec iov = { .iov_base = "hi", .iov_len = 2 };
-	struct iovec fields[fieldcount] = {0};
 	auth_payload_t p = { .fields = fields, .fieldcount = fieldcount };
 	if (auth_decode_packet(msg, &p) == -1) {
 		perror("auth_decode_packet()");
 		return;
 	}
-	auth_user_token_use(&fields[tok], &fields[pass]);
+	auth_user_token_use(&tok, &pass);
 	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
 		return;
 	}
@@ -639,15 +633,13 @@ static void auth_op_key_replace(lc_message_t *msg)
 static void auth_op_auth_service(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
-	enum {
-		repl,
-		user,
-		mail,
-		pass,
-		serv,
-		fieldcount
-	};
-	struct iovec fields[fieldcount] = {0};
+	struct iovec repl = {0};
+	struct iovec user = {0};
+	struct iovec mail = {0};
+	struct iovec pass = {0};
+	struct iovec serv = {0};
+	struct iovec fields[] = { repl, user, mail, pass, serv };
+	const int fieldcount = sizeof fields / sizeof fields[0];
 	struct iovec userid = {0};
 	struct iovec cap = {0};
 	auth_payload_t p = {0};
@@ -658,21 +650,21 @@ static void auth_op_auth_service(lc_message_t *msg)
 		perror("auth_decode_packet()");
 		return;
 	}
-	if (fields[user].iov_len > 0)
-		userid = fields[user];
+	if (user.iov_len > 0)
+		userid = user;
 	else {
 		/* user not supplied, look up from mail address */
-		if (auth_user_bymail(&fields[mail], &userid)) {
-			ERROR("no user found for '%.*s'", (int)fields[mail].iov_len,
-					(char *)fields[mail].iov_base);
+		if (auth_user_bymail(&mail, &userid)) {
+			ERROR("no user found for '%.*s'", (int)mail.iov_len,
+					(char *)mail.iov_base);
 			return;
 		}
 	}
-	if (auth_user_pass_verify(&userid, &fields[pass])) {
+	if (auth_user_pass_verify(&userid, &pass)) {
 		ERROR("failed login for user %.*s", (int)userid.iov_len, (char *)userid.iov_base);
 		return;
 	}
-	if (auth_serv_token_new(&cap, p.senderkey.iov_base, &fields[serv])) {
+	if (auth_serv_token_new(&cap, p.senderkey.iov_base, &serv)) {
 		perror("auth_serv_token_new()");
 		return;
 	}
