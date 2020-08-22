@@ -102,14 +102,24 @@ void *testthread(void *arg)
 	/* (5) await reply */
 	lc_msg_recv(sock_repl, &msg_repl);
 	test_assert(msg_repl.len > 0, "message has nonzero length");
-	test_assert(((uint8_t *)msg_repl.data)[0] == AUTH_OP_NOOP, "opcode");
-	test_assert(((uint8_t *)msg_repl.data)[1] == 0x7, "flags");
+	test_assert(((uint8_t *)msg_repl.data)[0] == 42, "opcode"); /* FIXME */
+	test_assert(((uint8_t *)msg_repl.data)[1] == 0x9, "flags");
 
 	/* (6) decrypt reply */
 	test_log("decrypt reply");
 	test_assert(msg_repl.len > 2, "message has payload");
 	auth_payload_t reply = {0};
-	test_assert(auth_decode_packet(&msg_repl, &reply) == 0, "decrypt server reply");
+	struct iovec fields[1];
+	reply.fields = fields;
+	reply.fieldcount = 1;
+
+	test_assert(auth_decode_packet_key(&msg_repl, &reply, sk) == 0, "decrypt server reply");
+	test_log("test server reply decrypted with %i fields", reply.fieldcount);
+	test_assert(reply.fields != NULL, "reply payload not NULL");
+	for (int i = 0; i < reply.fieldcount; i++) {
+		test_log("%.*s", (int)reply.fields[i].iov_len, (char*)reply.fields[i].iov_base);
+	}
+	free(reply.data);
 	lc_msg_free(&msg_repl);
 
 	/* TODO: (7) handle response/error */

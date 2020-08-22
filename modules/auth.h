@@ -113,5 +113,6 @@ int auth_user_token_set(char *userid, auth_user_token_t *token);
 int auth_user_token_use(struct iovec *token, struct iovec *pass);
 int auth_user_token_valid(auth_user_token_t *token);
 int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload);
+int auth_decode_packet_key(lc_message_t *msg, auth_payload_t *payload, unsigned char *sk);
 
 #endif /* _LSDM_AUTH_H */

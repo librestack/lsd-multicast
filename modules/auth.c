@@ -228,17 +228,19 @@ exit_err:
 	return ret;
 }
 
-int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
+int auth_decode_packet_key(lc_message_t *msg, auth_payload_t *payload, unsigned char *sk)
 {
 	/* unpack outer packet [opcode][flags] + [public key][nonce][payload] */
 	DEBUG("auth module unpacking outer packet of %zu bytes", msg->len);
-	struct iovec fld_key = {0};
-	struct iovec fld_nonce = {0};
-	struct iovec fld_payload = {0};
-	struct iovec outer[] = { fld_key, fld_nonce, fld_payload };
-	const int outerfields = sizeof outer / sizeof outer[0];
+	enum { /* outer fields */
+		fld_key,
+		fld_nonce,
+		fld_payload,
+		outerfields
+	};
 	struct iovec pkt = { .iov_base = msg->data, .iov_len = msg->len };
 	uint8_t op, flags;
+	struct iovec outer[outerfields] = {0};
 
 	if (wire_unpack(&pkt, outer, outerfields, &op, &flags) == -1) {
 		perror("wire_unpack()");
@@ -246,9 +248,9 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 		return -1;
 	}
 	/* outer fields are all required */
-	if ((fld_key.iov_len != crypto_box_PUBLICKEYBYTES)
-	||  (fld_nonce.iov_len != crypto_box_NONCEBYTES)
-	||  (fld_payload.iov_len < 1)) {
+	if ((outer[fld_key].iov_len != crypto_box_PUBLICKEYBYTES)
+	||  (outer[fld_nonce].iov_len != crypto_box_NONCEBYTES)
+	||  (outer[fld_payload].iov_len < 1)) {
 		ERROR("no payload");
 		errno = EBADMSG;
 		return -1;
@@ -259,15 +261,13 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 		return -1;
 	}
 
-	payload->data = malloc(fld_payload.iov_len - crypto_box_MACBYTES);
-	unsigned char privatekey[crypto_box_SECRETKEYBYTES];
-	payload->senderkey = fld_key;
-	unsigned char *nonce = fld_nonce.iov_base;
-	auth_key_crypt_sk_bin(privatekey, config.handlers->key_private);
+	payload->data = malloc(outer[fld_payload].iov_len - crypto_box_MACBYTES);
+	payload->senderkey = outer[fld_key];
+	unsigned char *nonce = outer[fld_nonce].iov_base;
 	if (crypto_box_open_easy(payload->data,
-				fld_payload.iov_base,
-				fld_payload.iov_len,
-				nonce, payload->senderkey.iov_base, privatekey) != 0)
+				outer[fld_payload].iov_base,
+				outer[fld_payload].iov_len,
+				nonce, payload->senderkey.iov_base, sk) != 0)
 	{
 		ERROR("packet decryption failed");
 		errno = EBADMSG;
@@ -279,7 +279,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	DEBUG("auth module unpacking fields");
 	struct iovec clearpkt = {0};
 	clearpkt.iov_base = payload->data;
-	clearpkt.iov_len = fld_payload.iov_len - crypto_box_MACBYTES;
+	clearpkt.iov_len = outer[fld_payload].iov_len - crypto_box_MACBYTES;
 	if (payload->fieldcount && wire_unpack_pre(&clearpkt, payload->fields, payload->fieldcount, NULL, 0) == -1)
 		return -1;
 	DEBUG("wire_unpack() fieldcount: %i", payload->fieldcount);
@@ -295,20 +295,29 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	return 0;
 }
 
+int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
+{
+	unsigned char sk[crypto_box_SECRETKEYBYTES];
+	auth_key_crypt_sk_bin(sk, config.handlers->key_private);
+	return auth_decode_packet_key(msg, payload, sk);
+}
+
 int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 		uint8_t op, uint8_t flags)
 {
 	/* encrypt payload */
 	const size_t cipherlen = crypto_box_MACBYTES + data->iov_len;
+	unsigned char authpubkey[crypto_box_PUBLICKEYBYTES];
 	unsigned char authseckey[crypto_box_SECRETKEYBYTES];
 	unsigned char nonce[crypto_box_NONCEBYTES];
 	unsigned char ciphertext[cipherlen];
-	struct iovec iovkey = { .iov_base = authseckey, .iov_len = crypto_box_PUBLICKEYBYTES };
+	struct iovec iovkey = { .iov_base = authpubkey, .iov_len = crypto_box_PUBLICKEYBYTES };
 	struct iovec iovnon = { .iov_base = nonce, .iov_len = crypto_box_NONCEBYTES };
 	struct iovec crypted = { .iov_base = ciphertext, .iov_len = cipherlen };
 	struct iovec payload[] = { iovkey, iovnon, crypted };
 	struct iovec pkt = {0};
-	auth_key_crypt_pk_bin(authseckey, config.handlers->key_private);
+	auth_key_crypt_pk_bin(authpubkey, config.handlers->key_public);
+	auth_key_crypt_sk_bin(authseckey, config.handlers->key_private);
 	randombytes_buf(nonce, sizeof nonce);
 	if (crypto_box_easy(ciphertext, (unsigned char *)data->iov_base, data->iov_len,
 				nonce, clientkey->iov_base, authseckey) == -1)
@@ -548,7 +557,7 @@ static void auth_op_user_add(lc_message_t *msg)
 		return;
 	}
 	if (!auth_valid_email(mail.iov_base, mail.iov_len)) {
-		ERROR("invalid email address");
+		ERROR("invalid email address: '%.*s'", mail.iov_base, mail.iov_len);
 		return;
 	}
 
@@ -611,7 +620,7 @@ static void auth_op_user_unlock(lc_message_t *msg)
 	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
 		return;
 	}
-	auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
+	auth_reply(&p.senderkey, &p.senderkey, &data, 42, 0x9);
 	free(p.data);
 };
 
