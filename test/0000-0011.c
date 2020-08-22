@@ -53,6 +53,12 @@ int main()
 	test_assert(auth_user_token_set(userid, &tok) == 0,
 			"auth_user_token_set()");
 
+	struct iovec res = {0};
+	test_assert(auth_field_getv(tok.hextoken, AUTH_HEXLEN - 1, "user", &res) == 0,
+			"find user from token");
+	test_expectn(userid, res.iov_base, AUTH_HEXLEN);
+	free(res.iov_base);
+
 	struct iovec badtoken = { .iov_base = "badtoken" };
 	badtoken.iov_len = strlen(badtoken.iov_base);
 	struct iovec usertoken = { .iov_base = tok.hextoken };
