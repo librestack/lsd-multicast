@@ -297,22 +297,43 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 	return 0;
 }
 
-int auth_reply(struct iovec *repl, struct iovec *key, struct iovec *data, uint8_t op, uint8_t flags)
+int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
+		uint8_t op, uint8_t flags)
 {
-	DEBUG("response to requestor");
+	/* encrypt payload */
+	const size_t cipherlen = crypto_box_MACBYTES + data->iov_len;
+	unsigned char authseckey[crypto_box_SECRETKEYBYTES];
+	unsigned char nonce[crypto_box_NONCEBYTES];
+	unsigned char ciphertext[cipherlen];
+	struct iovec iovkey = { .iov_base = authseckey, .iov_len = crypto_box_PUBLICKEYBYTES };
+	struct iovec iovnon = { .iov_base = nonce, .iov_len = crypto_box_NONCEBYTES };
+	struct iovec crypted = { .iov_base = ciphertext, .iov_len = cipherlen };
+	struct iovec payload[] = { iovkey, iovnon, crypted };
+	struct iovec pkt = {0};
+	auth_key_crypt_pk_bin(authseckey, config.handlers->key_private);
+	randombytes_buf(nonce, sizeof nonce);
+	if (crypto_box_easy(ciphertext, (unsigned char *)data->iov_base, data->iov_len,
+				nonce, clientkey->iov_base, authseckey) == -1)
+	{
+		return -1;
+	}
+
+	/* pack outer */
+	wire_pack(&pkt, payload, 3, op, flags);
+
+	/* send message */
 	lc_socket_t *sock = NULL;
 	lc_channel_t *chan = NULL;
 	lc_message_t response = {0};
+	DEBUG("response to requestor");
 	sock = lc_socket_new(lctx);
-	chan = lc_channel_nnew(lctx, key->iov_base, crypto_box_PUBLICKEYBYTES);
+	chan = lc_channel_nnew(lctx, repl->iov_base, repl->iov_len);
 	lc_channel_bind(sock, chan);
-	lc_msg_init_size(&response, 2); /* FIXME: always reply with payload */
-	((uint8_t *)response.data)[0] = op;	/* TODO: response opcode */
-	((uint8_t *)response.data)[1] = flags;	/* TODO: define response codes */
+	lc_msg_init_data(&response, pkt.iov_base, pkt.iov_len, NULL, NULL);
 	int opt = 1; /* set loopback in case we're on the same host as the sender */
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
-	lc_msg_free(&response);
+	free(pkt.iov_base);
 	return 0;
 };
 
@@ -397,7 +418,7 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *clientkey, struct iovec
 	/* TODO: permission bits */
 
 	expires = htobe64(time(NULL) + config.handlers->token_duration);
-	wire_pack_pre(&data, caps, iov_count, pre, pre_count);
+	wire_pack_pre(&data, *caps, iov_count, pre, pre_count);
 
 	cap_sig = malloc(crypto_sign_BYTES + data.iov_len);
 	auth_key_sign_sk_bin(sk, config.handlers->key_private);
@@ -558,6 +579,10 @@ static void auth_op_user_add(lc_message_t *msg)
 		free(to);
 	}
 	struct iovec data = {0};
+	struct iovec iov = { .iov_base = "hi", .iov_len = 2 };
+	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
+		return;
+	}
 	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
 	free(p.data);
 };
@@ -581,6 +606,7 @@ static void auth_op_user_unlock(lc_message_t *msg)
 		fieldcount
 	};
 	struct iovec data = {0};
+	struct iovec iov = { .iov_base = "hi", .iov_len = 2 };
 	struct iovec fields[fieldcount] = {0};
 	auth_payload_t p = { .fields = fields, .fieldcount = fieldcount };
 	if (auth_decode_packet(msg, &p) == -1) {
@@ -588,6 +614,9 @@ static void auth_op_user_unlock(lc_message_t *msg)
 		return;
 	}
 	auth_user_token_use(&fields[tok], &fields[pass]);
+	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
+		return;
+	}
 	auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
 	free(p.data);
 };
@@ -651,6 +680,10 @@ static void auth_op_auth_service(lc_message_t *msg)
 	/* TODO: logfile entry */
 
 	struct iovec data = {0};
+	if (wire_pack_pre(&data, &cap, 1, NULL, 0) == -1) {
+		return;
+	}
+
 	auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
 	free(p.data);
 };

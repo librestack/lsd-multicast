@@ -22,7 +22,7 @@ int main()
 	struct iovec mail = { .iov_base = "email@example.com" };
 	struct iovec pass = { .iov_base = "password" };
 	struct iovec serv = { .iov_base = "service" };
-	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
+	struct iovec iovs[] = { repl, user, mail, pass, serv };
 	struct iovec iovc[5] = {};
 	const int iov_count = sizeof iovs / sizeof iovs[0];
 	size_t len_check = 2, len_packed;
@@ -37,9 +37,9 @@ int main()
 	test_assert(errno == EINVAL, "data NULL => EINVAL");
 
 	for (int i = 0; i < iov_count; i++) {
-		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
-		len_check += iovs[i]->iov_len + 1; /* 1 byte for length + data */
-		for (size_t j = iovs[i]->iov_len; j > 0x7f; j >>= 7) {
+		iovs[i].iov_len = strlen(iovs[i].iov_base);
+		len_check += iovs[i].iov_len + 1; /* 1 byte for length + data */
+		for (size_t j = iovs[i].iov_len; j > 0x7f; j >>= 7) {
 			len_check++; /* extra byte needed for length */
 		}
 	}
@@ -66,10 +66,10 @@ int main()
 			shift += 7;
 		} while (b & 0x80);
 		len_check = (size_t)le64toh(n);
-		test_assert(iovs[i]->iov_len == len_check,
-				"check length, iovs[%i] %zu == %zu", i, iovs[i]->iov_len, len_check);
-		test_expectn(iovs[i]->iov_base, ptr, iovs[i]->iov_len); /* check data */
-		ptr += iovs[i]->iov_len;
+		test_assert(iovs[i].iov_len == len_check,
+				"check length, iovs[%i] %zu == %zu", i, iovs[i].iov_len, len_check);
+		test_expectn(iovs[i].iov_base, ptr, iovs[i].iov_len); /* check data */
+		ptr += iovs[i].iov_len;
 	}
 
 	/* unpack */
@@ -81,8 +81,8 @@ int main()
 	test_assert(op_check == op, "opcode");
 	test_assert(flags_check == flags, "flags");
 	for (int i = 0; i < iov_count; i++) {
-		test_assert(iovs[i]->iov_len == iovc[i].iov_len, "length check");
-		test_expectn(iovs[i]->iov_base, iovc[i].iov_base, iovc[i].iov_len);
+		test_assert(iovs[i].iov_len == iovc[i].iov_len, "length check");
+		test_expectn(iovs[i].iov_base, iovc[i].iov_base, iovc[i].iov_len);
 	}
 	free(data.iov_base);
 

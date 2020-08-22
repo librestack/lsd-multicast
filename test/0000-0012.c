@@ -39,7 +39,7 @@ void runtests()
 	for (int i = 1; i < iov_count; i++) {
 		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
 	}
-	len = wire_pack_pre(&data, iovs, iov_count, NULL, 0);
+	len = wire_pack_pre(&data, *iovs, iov_count, NULL, 0);
 	test_assert(len > 0, "wire_pack_pre() returned %i", len);
 
 	/* encrypt packet */
@@ -56,7 +56,7 @@ void runtests()
 	struct iovec iovkey = { .iov_base = pk, .iov_len = crypto_box_PUBLICKEYBYTES };
 	struct iovec iovnon = { .iov_base = nonce, .iov_len = crypto_box_NONCEBYTES };
 	struct iovec crypted = { .iov_base = ciphertext, .iov_len = cipherlen };
-	struct iovec *payload[] = { &iovkey, &iovnon, &crypted };
+	struct iovec payload[] = { iovkey, iovnon, crypted };
 	struct iovec pkt = {0};
 	len = wire_pack(&pkt, payload, 3, op, flags);
 

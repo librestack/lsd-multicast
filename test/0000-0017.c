@@ -47,17 +47,17 @@ void *testthread(void *arg)
 	auth_free();
 
 	/* (1) build packet */
-	struct iovec tok = { .iov_base = token.hextoken };
-	struct iovec pass = { .iov_base = "password" };
-	struct iovec *iovs[] = { &tok, &pass };
+	struct iovec iovs[] = {
+		{ .iov_base = token.hextoken },
+		{ .iov_base = "password" }
+	};
 	const int iov_count = sizeof iovs / sizeof iovs[0];
 	uint8_t op = AUTH_OP_USER_UNLOCK;
 	uint8_t flags = 0;
 	ssize_t len;
 	for (int i = 0; i < iov_count; i++) {
-		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
+		iovs[i].iov_len = strlen(iovs[i].iov_base);
 	}
-	//len = wire_pack(&data, iovs, iov_count, op, flags);
 	len = wire_pack_pre(&data, iovs, iov_count, NULL, 0);
 	test_assert(len > 0, "wire_pack() returned %i", len);
 
@@ -73,10 +73,11 @@ void *testthread(void *arg)
 	test_assert(!crypto_box_easy(ciphertext, (unsigned char *)data.iov_base, data.iov_len, nonce, authpubkey, sk), "crypto_box_easy()");
 
 	/* (2b) now pack encrypted payload with public key and nonce prepended */
-	struct iovec iovkey = { .iov_base = pk, .iov_len = crypto_box_PUBLICKEYBYTES };
-	struct iovec iovnon = { .iov_base = nonce, .iov_len = crypto_box_NONCEBYTES };
-	struct iovec crypted = { .iov_base = ciphertext, .iov_len = cipherlen };
-	struct iovec *payload[] = { &iovkey, &iovnon, &crypted };
+	struct iovec payload[] = {
+		{ .iov_base = pk, .iov_len = crypto_box_PUBLICKEYBYTES },
+		{ .iov_base = nonce, .iov_len = crypto_box_NONCEBYTES },
+		{ .iov_base = ciphertext, .iov_len = cipherlen }
+	};
 	struct iovec pkt;
 	len = wire_pack(&pkt, payload, 3, op, flags);
 
@@ -106,6 +107,7 @@ void *testthread(void *arg)
 
 	/* (6) decrypt reply */
 	test_log("decrypt reply");
+	test_assert(msg_repl.len > 2, "message has payload");
 	auth_payload_t reply = {0};
 	test_assert(auth_decode_packet(&msg_repl, &reply) == 0, "decrypt server reply");
 	lc_msg_free(&msg_repl);

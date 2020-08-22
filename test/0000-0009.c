@@ -38,13 +38,13 @@ void *testthread(void *arg)
 	struct iovec mail = { .iov_base = "noreply@librecast.net" };
 	struct iovec pass = { .iov_base = "password" };
 	struct iovec serv = { .iov_base = "service" };
-	struct iovec *iovs[] = { &repl, &user, &mail, &pass, &serv };
+	struct iovec iovs[] = { repl, user, mail, pass, serv };
 	const int iov_count = sizeof iovs / sizeof iovs[0];
 	uint8_t op = AUTH_OP_USER_ADD;
 	uint8_t flags = 9;
 	ssize_t len;
 	for (int i = 1; i < iov_count; i++) {
-		iovs[i]->iov_len = strlen(iovs[i]->iov_base);
+		iovs[i].iov_len = strlen(iovs[i].iov_base);
 	}
 	len = wire_pack_pre(&data, iovs, iov_count, NULL, 0);
 	test_assert(len > 0, "wire_pack() returned %i", len);
@@ -72,7 +72,7 @@ void *testthread(void *arg)
 	struct iovec crypted = { .iov_base = ciphertext, .iov_len = cipherlen };
 	struct iovec *payload[] = { &iovkey, &iovnon, &crypted };
 	struct iovec pkt;
-	len = wire_pack(&pkt, payload, 3, op, flags);
+	len = wire_pack(&pkt, *payload, 3, op, flags);
 
 	/* (3) bind to send/receive channels, join recv channel */
 	lctx = lc_ctx_new();

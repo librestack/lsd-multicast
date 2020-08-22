@@ -3,23 +3,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-ssize_t wire_pack_7bit(struct iovec *data, struct iovec *iovs[], int iov_count, size_t offset)
+ssize_t wire_pack_7bit(struct iovec *data, struct iovec iovs[], int iov_count, size_t offset)
 {
 	uint64_t n;
 	void *ptr = data->iov_base + offset;
 	for (int i = 0; i < iov_count; i++) {
 		/* encode length as bytes with 7 bits + overflow bit */
-		for (n = htole64(iovs[i]->iov_len); n > 0x7f; n >>= 7)
+		for (n = htole64(iovs[i].iov_len); n > 0x7f; n >>= 7)
 			memset(ptr++, 0x80 | n, 1);
 		memset(ptr++, n, 1);
-		memcpy(ptr, iovs[i]->iov_base, iovs[i]->iov_len);
-		ptr += iovs[i]->iov_len;
+		memcpy(ptr, iovs[i].iov_base, iovs[i].iov_len);
+		ptr += iovs[i].iov_len;
 	}
 	return data->iov_len;
 }
 
-ssize_t wire_pack_pre(struct iovec *data, struct iovec *iovs[], int iov_count,
-		struct iovec pre[], int pre_count)
+ssize_t wire_pack_pre(struct iovec *data, struct iovec iovs[], int iov_count,
+		struct iovec *pre, int pre_count)
 {
 	size_t offset = 0;
 	void *ptr;
@@ -32,8 +32,8 @@ ssize_t wire_pack_pre(struct iovec *data, struct iovec *iovs[], int iov_count,
 	data->iov_len = offset;
 	for (int i = 0; i < iov_count; i++) {
 		/* 1 byte for length + data */
-		data->iov_len += iovs[i]->iov_len + 1;
-		for (n = htole64(iovs[i]->iov_len); n > 0x7f; n >>= 7)
+		data->iov_len += iovs[i].iov_len + 1;
+		for (n = htole64(iovs[i].iov_len); n > 0x7f; n >>= 7)
 			data->iov_len++; /* extra length byte */
 	}
 	ptr = data->iov_base = calloc(1, data->iov_len + 1);
@@ -44,7 +44,7 @@ ssize_t wire_pack_pre(struct iovec *data, struct iovec *iovs[], int iov_count,
 	return wire_pack_7bit(data, iovs, iov_count, offset);
 }
 
-ssize_t wire_pack(struct iovec *data, struct iovec *iovs[], int iov_count, uint8_t op, uint8_t flags)
+ssize_t wire_pack(struct iovec *data, struct iovec iovs[], int iov_count, uint8_t op, uint8_t flags)
 {
 	struct iovec pre[2] = {0};
 	pre[0].iov_base = &op;
