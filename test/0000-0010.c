@@ -65,6 +65,7 @@ int main()
 	test_assert(auth_field_getv(mail, maillen, "user", &res) == 0,
 			"auth_field_getv()");
 	test_expectn(userid, res.iov_base, strlen(userid));
+	free(res.iov_base);
 
 	auth_free();
 	config_free();
