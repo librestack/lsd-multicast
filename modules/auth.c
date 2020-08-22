@@ -543,26 +543,28 @@ static void auth_op_noop(lc_message_t *msg)
 static void auth_op_user_add(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
-	struct iovec repl = {0};
-	struct iovec user = {0};
-	struct iovec mail = {0};
-	struct iovec pass = {0};
-	struct iovec serv = {0};
-	struct iovec fields[] = { repl, user, mail, pass, serv };
-	const int fieldcount = sizeof fields / sizeof fields[0];
+	enum {
+		repl,
+		user,
+		mail,
+		pass,
+		serv,
+		fieldcount
+	};
+	struct iovec fields[fieldcount] = {0};
 	auth_payload_t p = { .fields = fields, .fieldcount = fieldcount };
 
 	if (auth_decode_packet(msg, &p) == -1) {
 		perror("auth_decode_packet()");
 		return;
 	}
-	if (!auth_valid_email(mail.iov_base, mail.iov_len)) {
-		ERROR("invalid email address: '%.*s'", mail.iov_base, mail.iov_len);
+	if (!auth_valid_email(fields[mail].iov_base, fields[mail].iov_len)) {
+		ERROR("invalid email address: '%.*s'", fields[mail].iov_base, fields[mail].iov_len);
 		return;
 	}
 
 	char userid[AUTH_HEXLEN] = "";
-	auth_user_create(userid, &mail, &pass);
+	auth_user_create(userid, &fields[mail], &fields[pass]);
 	auth_user_token_t token = {0};
 	auth_user_token_new(&token, &p);
 	auth_user_token_set(userid, &token);
@@ -573,7 +575,7 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	DEBUG("emailing token");
 	if (!config.testmode) {
-		char *to = strndup(mail.iov_base, mail.iov_len);
+		char *to = strndup(fields[mail].iov_base, fields[mail].iov_len);
 		char subject[] = "Librecast Live - Confirm Your Email Address";
 		if (auth_mail_token(subject, to, token.hextoken) == -1) {
 			ERROR("error in auth_mail_token()");
@@ -588,7 +590,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
 		return;
 	}
-	auth_reply(&repl, &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
+	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
 	free(p.data);
 };
 
