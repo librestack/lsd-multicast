@@ -61,6 +61,11 @@ int main()
 	test_expectn(userid, vptr, vlen);
 	free(vptr);
 
+	struct iovec res = {0};
+	test_assert(auth_field_getv(mail, maillen, "user", &res) == 0,
+			"auth_field_getv()");
+	test_expectn(userid, res.iov_base, strlen(userid));
+
 	auth_free();
 	config_free();
 	return fails;
