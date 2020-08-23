@@ -616,7 +616,7 @@ static void auth_op_user_add(lc_message_t *msg)
 		perror("wire_pack_pre()");
 		return;
 	}
-	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x3);
+	auth_reply_error(&fields[repl], &p.senderkey, 0);
 	free(p.data);
 };
 
