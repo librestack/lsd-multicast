@@ -345,10 +345,11 @@ int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 	return 0;
 };
 
-static void auth_reply_error(struct iovec *repl, struct iovec *clientkey, uint8_t err)
+static void auth_reply_code(struct iovec *repl, struct iovec *clientkey, uint8_t code)
 {
-	TRACE("%s(): %i", __func__, err);
-	struct iovec data = { .iov_base = &err, .iov_len = 1 };
+	TRACE("%s(): %i", __func__, code);
+	/* TODO: include id of request in response */
+	struct iovec data = { .iov_base = &code, .iov_len = 1 };
 	struct iovec packed = {0};
 	if (wire_pack_pre(&packed, &data, 1, NULL, 0) == -1) {
 		return;
@@ -579,7 +580,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	if (!auth_valid_email(fields[mail].iov_base, fields[mail].iov_len)) {
 		ERROR("invalid email address: '%.*s'", (int)fields[mail].iov_len,
 				(char*)fields[mail].iov_base);
-		auth_reply_error(&fields[repl], &p.senderkey, 42); /* FIXME  - error codes */
+		auth_reply_code(&fields[repl], &p.senderkey, 42); /* FIXME  - error codes */
 		free(p.data);
 		return;
 	}
@@ -616,7 +617,7 @@ static void auth_op_user_add(lc_message_t *msg)
 		perror("wire_pack_pre()");
 		return;
 	}
-	auth_reply_error(&fields[repl], &p.senderkey, 0);
+	auth_reply_code(&fields[repl], &p.senderkey, 0);
 	free(p.data);
 };
 
@@ -651,7 +652,7 @@ static void auth_op_user_unlock(lc_message_t *msg)
 		perror("wire_pack_pre()");
 		return;
 	}
-	auth_reply(&p.senderkey, &p.senderkey, &data, 42, 0x9);
+	auth_reply_code(&p.senderkey, &p.senderkey, 0);
 	free(p.data);
 };
 

@@ -102,8 +102,8 @@ void *testthread(void *arg)
 	/* (5) await reply */
 	lc_msg_recv(sock_repl, &msg_repl);
 	test_assert(msg_repl.len > 0, "message has nonzero length");
-	test_assert(((uint8_t *)msg_repl.data)[0] == 42, "opcode"); /* FIXME */
-	test_assert(((uint8_t *)msg_repl.data)[1] == 0x9, "flags");
+	test_assert(((uint8_t *)msg_repl.data)[0] == 0x0, "opcode"); /* FIXME */
+	test_assert(((uint8_t *)msg_repl.data)[1] == 0x1, "flags");
 
 	/* (6) decrypt reply */
 	test_log("decrypt reply");
