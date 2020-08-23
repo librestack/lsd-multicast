@@ -345,6 +345,13 @@ int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 	return 0;
 };
 
+void auth_reply_error(struct iovec *repl, struct iovec *clientkey, int err)
+{
+	TRACE("%s(): %i", __func__, err);
+	struct iovec data = { .iov_base = &err, .iov_len = sizeof err };
+	auth_reply(repl, clientkey, &data, AUTH_OP_NOOP, 0x1);
+}
+
 int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
 {
 	int ret = 0;
@@ -375,8 +382,7 @@ char *auth_key_sign_pk_hex(char *combokey)
 	return combokey + crypto_box_PUBLICKEYBYTES * 2;
 }
 
-char *auth_key_sign_sk_hex(char *combokey)
-{
+char *auth_key_sign_sk_hex(char *combokey){
 	return combokey + crypto_box_SECRETKEYBYTES * 2;
 }
 
@@ -567,13 +573,19 @@ static void auth_op_user_add(lc_message_t *msg)
 		return;
 	}
 	if (!auth_valid_email(fields[mail].iov_base, fields[mail].iov_len)) {
-		ERROR("invalid email address: '%.*s'", fields[mail].iov_base, fields[mail].iov_len);
+		ERROR("invalid email address: '%.*s'", (int)fields[mail].iov_len,
+				(char*)fields[mail].iov_base);
+		free(p.data);
+		auth_reply_error(&fields[repl], &p.senderkey, 42); /* FIXME  - error codes */
+
 		return;
 	}
 
 	char userid[AUTH_HEXLEN] = "";
 	if (auth_user_create(userid, &fields[mail], &fields[pass])) {
 		perror("auth_user_create");
+		free(p.data);
+		return;
 	}
 	auth_user_token_t token = {0};
 	auth_user_token_new(&token, &p);
@@ -601,7 +613,7 @@ static void auth_op_user_add(lc_message_t *msg)
 		perror("wire_pack_pre()");
 		return;
 	}
-	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
+	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_NOOP, 0x3);
 	free(p.data);
 };
 
@@ -704,7 +716,7 @@ static void auth_op_auth_service(lc_message_t *msg)
 		return;
 	}
 
-	auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x7);
+	auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x42);
 	free(p.data);
 };
 
