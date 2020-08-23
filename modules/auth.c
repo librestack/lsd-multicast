@@ -345,11 +345,15 @@ int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 	return 0;
 };
 
-void auth_reply_error(struct iovec *repl, struct iovec *clientkey, int err)
+static void auth_reply_error(struct iovec *repl, struct iovec *clientkey, uint8_t err)
 {
 	TRACE("%s(): %i", __func__, err);
-	struct iovec data = { .iov_base = &err, .iov_len = sizeof err };
-	auth_reply(repl, clientkey, &data, AUTH_OP_NOOP, 0x1);
+	struct iovec data = { .iov_base = &err, .iov_len = 1 };
+	struct iovec packed = {0};
+	if (wire_pack_pre(&packed, &data, 1, NULL, 0) == -1) {
+		return;
+	}
+	auth_reply(repl, clientkey, &packed, AUTH_OP_NOOP, 0x1);
 }
 
 int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
@@ -575,9 +579,8 @@ static void auth_op_user_add(lc_message_t *msg)
 	if (!auth_valid_email(fields[mail].iov_base, fields[mail].iov_len)) {
 		ERROR("invalid email address: '%.*s'", (int)fields[mail].iov_len,
 				(char*)fields[mail].iov_base);
-		free(p.data);
 		auth_reply_error(&fields[repl], &p.senderkey, 42); /* FIXME  - error codes */
-
+		free(p.data);
 		return;
 	}
 
