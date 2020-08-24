@@ -48,6 +48,7 @@ void *testthread(void *arg)
 
 	/* (1) build packet */
 	struct iovec iovs[] = {
+		{ .iov_base = pk, .iov_len = crypto_box_PUBLICKEYBYTES },
 		{ .iov_base = token.hextoken },
 		{ .iov_base = "password" }
 	};
@@ -55,7 +56,7 @@ void *testthread(void *arg)
 	uint8_t op = AUTH_OP_USER_UNLOCK;
 	uint8_t flags = 0;
 	ssize_t len;
-	for (int i = 0; i < iov_count; i++) {
+	for (int i = 1; i < iov_count; i++) {
 		iovs[i].iov_len = strlen(iovs[i].iov_base);
 	}
 	len = wire_pack_pre(&data, iovs, iov_count, NULL, 0);
@@ -102,8 +103,8 @@ void *testthread(void *arg)
 	/* (5) await reply */
 	lc_msg_recv(sock_repl, &msg_repl);
 	test_assert(msg_repl.len > 0, "message has nonzero length");
-	test_assert(((uint8_t *)msg_repl.data)[0] == 0x0, "opcode"); /* FIXME */
-	test_assert(((uint8_t *)msg_repl.data)[1] == 0x1, "flags");
+	test_assert(((uint8_t *)msg_repl.data)[0] == AUTH_OP_USER_UNLOCK, "opcode"); /* FIXME */
+	test_assert(((uint8_t *)msg_repl.data)[1] == 0x0, "flags");
 
 	/* (6) decrypt reply */
 	test_log("decrypt reply");
