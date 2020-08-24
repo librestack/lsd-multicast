@@ -345,16 +345,15 @@ int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 	return 0;
 };
 
-static void auth_reply_code(struct iovec *repl, struct iovec *clientkey, uint8_t code)
+static void auth_reply_code(struct iovec *repl, struct iovec *clientkey, uint8_t op, uint8_t code)
 {
 	TRACE("%s(): %i", __func__, code);
-	/* TODO: include id of request in response */
 	struct iovec data = { .iov_base = &code, .iov_len = 1 };
 	struct iovec packed = {0};
 	if (wire_pack_pre(&packed, &data, 1, NULL, 0) == -1) {
 		return;
 	}
-	auth_reply(repl, clientkey, &packed, AUTH_OP_NOOP, 0x1);
+	auth_reply(repl, clientkey, &packed, op, code);
 }
 
 int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
@@ -506,9 +505,9 @@ int auth_user_token_set(char *userid, auth_user_token_t *token)
 	return 0;
 }
 
-int auth_user_token_use(struct iovec *token, struct iovec *pass)
+uint8_t auth_user_token_use(struct iovec *token, struct iovec *pass)
 {
-	int ret = 0;
+	uint8_t code = 0;
 	struct iovec user = {0};
 	struct iovec expires = {0};
 	char *userid;
@@ -516,37 +515,38 @@ int auth_user_token_use(struct iovec *token, struct iovec *pass)
 	DEBUG("search for token '%.*s'", AUTH_HEXLEN - 1, (char *)token->iov_base);
 	if (auth_field_getv(token->iov_base, token->iov_len, "user", &user)) {
 		DEBUG("user token not found");
-		return -1;
+		return 1;
 	}
 	assert(user.iov_len > 0);
 	DEBUG("token matches user '%.*s'", (int)user.iov_len, (char *)user.iov_base);
 	if (auth_field_getv(token->iov_base, token->iov_len, "expires", &expires)) {
 		DEBUG("user token expiry not found");
-		return -1;
+		return 1;
 	}
 	tok.expires = *((uint64_t *)expires.iov_base);
 	free(expires.iov_base);
 	if (!auth_user_token_valid(&tok)) {
 		DEBUG("invalid token");
-		ret = -1;
+		code = 1;
 		goto delete_token;
 	}
 	DEBUG("valid user token");
 	userid = strndup(user.iov_base, user.iov_len);
-	if (auth_user_pass_set(userid, pass))
-		ret = -1;
+	if (auth_user_pass_set(userid, pass)) {
+		code = 1;
+	}
 	DEBUG("password set for user %s", userid);
 	free(userid);
 delete_token:
 	free(user.iov_base);
-	/* tokens are single-user - delete */
+	/* tokens are single-use - delete */
 	if (auth_field_delv(token->iov_base, token->iov_len, "user", &user)) {
 		ERROR("user token not deleted");
-		return -1;
 	}
-	DEBUG("user token deleted");
-
-	return ret;
+	else {
+		DEBUG("user token deleted");
+	}
+	return code;
 }
 
 int auth_user_token_valid(auth_user_token_t *token)
@@ -562,6 +562,7 @@ static void auth_op_noop(lc_message_t *msg)
 static void auth_op_user_add(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
+	uint8_t code = 0;
 	enum {
 		repl,
 		user,
@@ -580,16 +581,15 @@ static void auth_op_user_add(lc_message_t *msg)
 	if (!auth_valid_email(fields[mail].iov_base, fields[mail].iov_len)) {
 		ERROR("invalid email address: '%.*s'", (int)fields[mail].iov_len,
 				(char*)fields[mail].iov_base);
-		auth_reply_code(&fields[repl], &p.senderkey, 42); /* FIXME  - error codes */
-		free(p.data);
-		return;
+		code = 1;
+		goto reply_to_sender;
 	}
 
 	char userid[AUTH_HEXLEN] = "";
 	if (auth_user_create(userid, &fields[mail], &fields[pass])) {
 		perror("auth_user_create");
-		free(p.data);
-		return;
+		code = 1;
+		goto reply_to_sender;
 	}
 	auth_user_token_t token = {0};
 	auth_user_token_new(&token, &p);
@@ -604,20 +604,16 @@ static void auth_op_user_add(lc_message_t *msg)
 		char *to = strndup(fields[mail].iov_base, fields[mail].iov_len);
 		char subject[] = "Librecast Live - Confirm Your Email Address";
 		if (auth_mail_token(subject, to, token.hextoken) == -1) {
-			ERROR("error in auth_mail_token()");
+			perror("auth_mail_token()");
+			code = 1;
 		}
 		else {
 			DEBUG("email sent");
 		}
 		free(to);
 	}
-	struct iovec data = {0};
-	struct iovec iov = { .iov_base = "hi", .iov_len = 2 };
-	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
-		perror("wire_pack_pre()");
-		return;
-	}
-	auth_reply_code(&fields[repl], &p.senderkey, 0);
+reply_to_sender:
+	auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_USER_ADD, code);
 	free(p.data);
 };
 
@@ -634,7 +630,9 @@ static void auth_op_user_lock(lc_message_t *msg)
 static void auth_op_user_unlock(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
+	uint8_t code;
 	enum {
+		repl,
 		tok,
 		pass,
 		fieldcount
@@ -647,12 +645,12 @@ static void auth_op_user_unlock(lc_message_t *msg)
 		perror("auth_decode_packet()");
 		return;
 	}
-	auth_user_token_use(&fields[tok], &fields[pass]);
+	code = auth_user_token_use(&fields[tok], &fields[pass]);
 	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
 		perror("wire_pack_pre()");
 		return;
 	}
-	auth_reply_code(&p.senderkey, &p.senderkey, 0);
+	auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_USER_UNLOCK, code);
 	free(p.data);
 };
 
@@ -674,6 +672,7 @@ static void auth_op_key_replace(lc_message_t *msg)
 static void auth_op_auth_service(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
+	uint8_t code = 0;
 	enum {
 		repl,
 		user,
@@ -700,27 +699,32 @@ static void auth_op_auth_service(lc_message_t *msg)
 		if (auth_user_bymail(&fields[mail], &userid)) {
 			ERROR("no user found for '%.*s'", (int)fields[mail].iov_len,
 					(char *)fields[mail].iov_base);
-			return;
+			code = 1;
+			goto reply_to_sender;
 		}
 	}
 	if (auth_user_pass_verify(&userid, &fields[pass])) {
 		ERROR("failed login for user %.*s", (int)userid.iov_len, (char *)userid.iov_base);
-		return;
+		code = 1;
+		goto reply_to_sender;
 	}
 	DEBUG("successful login for user %.*s", (int)userid.iov_len, (char *)userid.iov_base);
 	if (auth_serv_token_new(&cap, &p.senderkey, &fields[serv])) {
 		perror("auth_serv_token_new()");
-		return;
+		code = 2; /* internal server error */
+		goto reply_to_sender;
 	}
 
 	/* TODO: logfile entry */
 
 	struct iovec data = {0};
 	if (wire_pack_pre(&data, &cap, 1, NULL, 0) == -1) {
-		return;
+		perror("wire_pack_pre()");
+		code = 2; /* internal server error */
 	}
-
-	auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x42);
+reply_to_sender:
+	//auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x42);
+	auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_AUTH_SERV, code);
 	free(p.data);
 };
 
