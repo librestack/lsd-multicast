@@ -342,6 +342,9 @@ int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
 	free(pkt.iov_base);
+	free(data->iov_base);
+	lc_channel_free(chan);
+	lc_socket_close(sock);
 	return 0;
 };
 
