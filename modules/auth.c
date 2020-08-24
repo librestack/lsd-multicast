@@ -649,11 +649,10 @@ static void auth_op_user_unlock(lc_message_t *msg)
 		return;
 	}
 	code = auth_user_token_use(&fields[tok], &fields[pass]);
-	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1) {
+	if (wire_pack_pre(&data, &iov, 1, NULL, 0) == -1)
 		perror("wire_pack_pre()");
-		return;
-	}
-	auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_USER_UNLOCK, code);
+	else
+		auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_USER_UNLOCK, code);
 	free(p.data);
 };
 
