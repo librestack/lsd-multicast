@@ -130,10 +130,12 @@ int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 	DEBUG("userid created: %s", userid);
 	if (auth_user_pass_set(userid, pass)) {
 		ERROR("failed to set password");
+		free(user.iov_base);
 		return -1;
 	}
 	auth_field_set(userid, AUTH_HEXLEN, "mail", mail->iov_base, mail->iov_len);
 	auth_field_set(mail->iov_base, mail->iov_len, "user", userid, AUTH_HEXLEN);
+	free(user.iov_base);
 	return 0;
 }
 
