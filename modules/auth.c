@@ -728,6 +728,7 @@ reply_to_sender:
 	//auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x42);
 	auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_AUTH_SERV, code);
 	free(p.data);
+	free(cap.iov_base);
 };
 
 void init(config_t *c)
