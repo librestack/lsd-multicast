@@ -656,6 +656,7 @@ static void auth_op_user_unlock(lc_message_t *msg)
 	else
 		auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_USER_UNLOCK, code);
 	free(p.data);
+	free(data.iov_base);
 };
 
 static void auth_op_key_add(lc_message_t *msg)
