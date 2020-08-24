@@ -731,6 +731,7 @@ reply_to_sender:
 	auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_AUTH_SERV, code);
 	free(p.data);
 	free(cap.iov_base);
+	if (!fields[user].iov_len) free(userid.iov_base);
 };
 
 void init(config_t *c)
