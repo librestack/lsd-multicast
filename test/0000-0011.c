@@ -65,11 +65,11 @@ int main()
 	usertoken.iov_len = strlen(usertoken.iov_base);
 	struct iovec pass = { .iov_base = "correcthorsebatterystaple" };
 	pass.iov_len = strlen(pass.iov_base);
-	test_assert(auth_user_token_use(&badtoken, &pass) == -1,
+	test_assert(auth_user_token_use(&badtoken, &pass) == 1,
 			"auth_user_token_use() - bad token");
 	test_assert(auth_user_token_use(&usertoken, &pass) == 0,
 			"auth_user_token_use() - set password");
-	test_assert(auth_user_token_use(&usertoken, &pass) == -1,
+	test_assert(auth_user_token_use(&usertoken, &pass) == 1,
 			"auth_user_token_use() - use same token twice");
 
 	test_log("trying expired token");
@@ -80,7 +80,7 @@ int main()
 	test_assert(!auth_user_token_valid(&tok), "ensure token invalid (expired)");
 	test_assert(auth_user_token_set(userid, &tok) == 0,
 			"auth_user_token_set()");
-	test_assert(auth_user_token_use(&usertoken, &pass) == -1,
+	test_assert(auth_user_token_use(&usertoken, &pass) == 1,
 			"auth_user_token_use() - expired token");
 
 	auth_free();

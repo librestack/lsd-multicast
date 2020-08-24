@@ -95,8 +95,8 @@ void *testthread(void *arg)
 	/* (5) await reply */
 	lc_msg_recv(sock_repl, &msg_repl);
 	test_assert(msg_repl.len > 0, "message has nonzero length");
-	test_assert(((uint8_t *)msg_repl.data)[0] == AUTH_OP_NOOP, "opcode");
-	test_assert(((uint8_t *)msg_repl.data)[1] == 7, "flags");
+	test_assert(((uint8_t *)msg_repl.data)[0] == AUTH_OP_USER_ADD, "opcode");
+	test_assert(((uint8_t *)msg_repl.data)[1] == 0, "flags");
 	lc_msg_free(&msg_repl);
 
 	/* TODO: (6) decrypt reply */
