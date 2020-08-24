@@ -33,9 +33,15 @@ void *testthread(void *arg)
 	test_assert(crypto_box_keypair(pk, sk) != -1, "crypto_box_keypair()");
 
 	/* (1) build packet */
+	unsigned char localpart[8];
+	char localparthex[17];
+	char emailaddr[31] = "XXXXXXXXXXXXXXXX@librecast.net";
+	randombytes_buf(localpart, 8);
+	sodium_bin2hex(localparthex, 17, localpart, 8);
+	memcpy(emailaddr, localparthex, 15);
 	struct iovec repl = { .iov_base = pk, .iov_len = crypto_box_PUBLICKEYBYTES };
 	struct iovec user = { .iov_base = "username" };
-	struct iovec mail = { .iov_base = "noreply@librecast.net" };
+	struct iovec mail = { .iov_base = emailaddr };
 	struct iovec pass = { .iov_base = "password" };
 	struct iovec serv = { .iov_base = "service" };
 	struct iovec iovs[] = { repl, user, mail, pass, serv };
