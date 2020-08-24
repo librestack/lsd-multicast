@@ -344,7 +344,6 @@ int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 	lc_socket_setopt(sock, IPV6_MULTICAST_LOOP, &opt, sizeof(opt));
 	lc_msg_send(chan, &response);
 	free(pkt.iov_base);
-	free(data->iov_base);
 	lc_channel_free(chan);
 	lc_socket_close(sock);
 	return 0;
@@ -359,6 +358,7 @@ static void auth_reply_code(struct iovec *repl, struct iovec *clientkey, uint8_t
 		return;
 	}
 	auth_reply(repl, clientkey, &packed, op, code);
+	free(packed.iov_base);
 }
 
 int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
@@ -730,6 +730,7 @@ reply_to_sender:
 	//auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x42);
 	auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_AUTH_SERV, code);
 	free(p.data);
+	free(data.iov_base);
 	free(cap.iov_base);
 	if (!fields[user].iov_len) free(userid.iov_base);
 };
