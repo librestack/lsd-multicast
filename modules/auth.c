@@ -308,6 +308,7 @@ int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 		uint8_t op, uint8_t flags)
 {
+	TRACE("%s(): %i", __func__, flags);
 	/* encrypt payload */
 	const size_t cipherlen = crypto_box_MACBYTES + data->iov_len;
 	unsigned char authpubkey[crypto_box_PUBLICKEYBYTES];
@@ -318,6 +319,7 @@ int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 	struct iovec iovnon = { .iov_base = nonce, .iov_len = crypto_box_NONCEBYTES };
 	struct iovec crypted = { .iov_base = ciphertext, .iov_len = cipherlen };
 	struct iovec payload[] = { iovkey, iovnon, crypted };
+	const size_t paylen = sizeof payload / sizeof payload[0];
 	struct iovec pkt = {0};
 	auth_key_crypt_pk_bin(authpubkey, config.handlers->key_public);
 	auth_key_crypt_sk_bin(authseckey, config.handlers->key_private);
@@ -329,7 +331,7 @@ int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 	}
 
 	/* pack outer */
-	wire_pack(&pkt, payload, 3, op, flags);
+	wire_pack(&pkt, payload, paylen, op, flags);
 
 	/* send message */
 	lc_socket_t *sock = NULL;
@@ -354,7 +356,7 @@ static void auth_reply_code(struct iovec *repl, struct iovec *clientkey, uint8_t
 	TRACE("%s(): %i", __func__, code);
 	struct iovec data = { .iov_base = &code, .iov_len = 1 };
 	struct iovec packed = {0};
-	if (wire_pack_pre(&packed, &data, 1, NULL, 0) == -1) {
+	if (wire_pack_pre(&packed, NULL, 0, &data, 1) == -1) {
 		return;
 	}
 	auth_reply(repl, clientkey, &packed, op, code);
@@ -687,6 +689,7 @@ static void auth_op_auth_service(lc_message_t *msg)
 	struct iovec fields[fieldcount] = {0};
 	struct iovec userid = {0};
 	struct iovec cap = {0};
+	struct iovec data = {0};
 	auth_payload_t p = {0};
 	p.fields = fields;
 	p.fieldcount = fieldcount;
@@ -722,13 +725,16 @@ static void auth_op_auth_service(lc_message_t *msg)
 
 	/* TODO: logfile entry */
 
-	struct iovec data = {0};
-	if (wire_pack_pre(&data, &cap, 1, NULL, 0) == -1) {
+	struct iovec iovcode = { .iov_base = &code, .iov_len = 1 };
+	if (wire_pack_pre(&data, &cap, 1, &iovcode, 1) == -1) {
 		perror("wire_pack_pre()");
 		code = 2; /* internal server error */
 	}
+	else
+		auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_AUTH_SERV, code);
 reply_to_sender:
-	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_AUTH_SERV, code);
+	if (code)
+		auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_AUTH_SERV, code);
 	free(p.data);
 	free(data.iov_base);
 	free(cap.iov_base);
