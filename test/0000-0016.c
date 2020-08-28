@@ -22,8 +22,12 @@ int main()
 	struct iovec clientkey = { .iov_base = "d557f11f52c78a151495aee584791d281bb29efb66304932a3c509468588d87c2b0bace3b52f95177d40122f03330ebab9eb42c809e17becb34aea3c1caf0b3b" };
 	clientkey.iov_len = strlen(clientkey.iov_base);
 	struct iovec serv = { .iov_base = "service" };
+	struct iovec user = { .iov_base = "myuserid" };
 	serv.iov_len = strlen(serv.iov_base);
-	test_assert(auth_serv_token_new(&cap_sig, &clientkey, &serv) == 0, "auth_serv_token_new()");
+	user.iov_len = strlen(user.iov_base);
+	struct iovec caps[] = { clientkey, serv, user };
+	const int iov_count = sizeof caps / sizeof caps[0];
+	test_assert(auth_serv_token_new(&cap_sig, caps, iov_count) == 0, "auth_serv_token_new()");
 	test_log("cap_sig.iov_len = %zu", cap_sig.iov_len);
 
 	test_assert(cap_sig.iov_len > 0, "cap token check length");
@@ -37,8 +41,7 @@ int main()
 		cap_sig.iov_base, cap_sig.iov_len, pk) == 0, "verified cap signature");
 
 	/* unpack the token and check it */
-	struct iovec iovs[2] = {0};
-	const int iov_count = sizeof iovs / sizeof iovs[0];
+	struct iovec iovs[3] = {0};
 	uint64_t expires;
 	struct iovec pre[1] = {0};
 	const int pre_count = sizeof pre / sizeof pre[0];
@@ -52,6 +55,7 @@ int main()
 	test_assert(expires <= time(NULL) + config.handlers->token_duration, "check expires");
 	test_expectiov(&clientkey, &iovs[0]);
 	test_expectiov(&serv, &iovs[1]);
+	test_expectiov(&user, &iovs[2]);
 
 	free(cap);
 	free(cap_sig.iov_base);

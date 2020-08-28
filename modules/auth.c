@@ -425,21 +425,19 @@ unsigned char *auth_key_sign_sk_bin(unsigned char *binkey, char *combokey)
 	return binkey;
 }
 
-int auth_serv_token_new(struct iovec *tok, struct iovec *clientkey, struct iovec *serv)
+int auth_serv_token_new(struct iovec *tok, struct iovec *iov, size_t iovlen)
 {
 	unsigned char sk[crypto_sign_SECRETKEYBYTES] = {0};
 	unsigned long long tok_len = 0;
 	unsigned char *cap_sig;
 	struct iovec data;
-	struct iovec caps[] = { *clientkey, *serv };
-	const int iov_count = sizeof caps / sizeof caps[0];
 	uint64_t expires;
 	struct iovec pre[1] = {0};
 	const int pre_count = sizeof pre / sizeof pre[0];
 	pre[0].iov_base = &expires;
 	pre[0].iov_len = sizeof expires;
 	expires = htobe64(time(NULL) + config.handlers->token_duration);
-	if (wire_pack_pre(&data, caps, iov_count, pre, pre_count) == -1) {
+	if (wire_pack_pre(&data, iov, iovlen, pre, pre_count) == -1) {
 		perror("wire_pack_pre()");
 		return -1;
 	}
@@ -714,7 +712,9 @@ static void auth_op_auth_service(lc_message_t *msg)
 		goto reply_to_sender;
 	}
 	DEBUG("successful login for user %.*s", (int)userid.iov_len, (char *)userid.iov_base);
-	if (auth_serv_token_new(&cap, &p.senderkey, &fields[serv])) {
+	struct iovec iov[] = { p.senderkey, fields[serv], userid };
+	const int iovlen = sizeof iov / sizeof iov[0];
+	if (auth_serv_token_new(&cap, iov, iovlen)) {
 		perror("auth_serv_token_new()");
 		code = 2; /* internal server error */
 		goto reply_to_sender;
@@ -728,8 +728,7 @@ static void auth_op_auth_service(lc_message_t *msg)
 		code = 2; /* internal server error */
 	}
 reply_to_sender:
-	//auth_reply(&p.senderkey, &p.senderkey, &data, AUTH_OP_NOOP, 0x42);
-	auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_AUTH_SERV, code);
+	auth_reply(&fields[repl], &p.senderkey, &data, AUTH_OP_AUTH_SERV, code);
 	free(p.data);
 	free(data.iov_base);
 	free(cap.iov_base);
