@@ -123,8 +123,16 @@ int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 	/* we don't do any strength checking on passwords here
 	 * save that for the UI where we can give proper feedback */
 	if (!pass) pass = &nopass;
-
-	randombytes_buf(userid_bytes, sizeof userid_bytes);
+#ifdef AUTH_TESTMODE
+	if (config.testmode) {
+		DEBUG("%s(): test mode enabled", __func__);
+		unsigned char seed[randombytes_SEEDBYTES];
+		memcpy(seed, mail->iov_base, randombytes_SEEDBYTES);
+		randombytes_buf_deterministic(userid_bytes, sizeof userid_bytes, seed);
+	}
+	else
+#endif
+		randombytes_buf(userid_bytes, sizeof userid_bytes);
 	sodium_bin2hex(userid, AUTH_HEXLEN, userid_bytes, sizeof userid_bytes);
 	DEBUG("userid created: %s", userid);
 	if (auth_user_pass_set(userid, pass)) {
@@ -434,8 +442,8 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *iov, size_t iovlen)
 	unsigned char *cap_sig;
 	struct iovec data;
 	uint64_t expires;
-	struct iovec pre[1] = {0};
-	const int pre_count = sizeof pre / sizeof pre[0];
+	const int pre_count = 1;
+	struct iovec pre[pre_count];
 	pre[0].iov_base = &expires;
 	pre[0].iov_len = sizeof expires;
 	expires = htobe64(time(NULL) + config.handlers->token_duration);
@@ -449,6 +457,7 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *iov, size_t iovlen)
 		errno = ENOMEM;
 		return -1;
 	}
+	DEBUG("unsigned token is %zu bytes", data.iov_len);
 	auth_key_sign_sk_bin(sk, config.handlers->key_private);
 	if (crypto_sign(cap_sig, &tok_len, data.iov_base, data.iov_len, sk)) {
 		ERROR("crypto_sign() failed");
@@ -482,13 +491,16 @@ int auth_serv_token_get(struct iovec *tok, struct iovec *user, struct iovec *pas
 
 int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 {
+#ifdef AUTH_TESTMODE
 	if (config.testmode) {
-		DEBUG("auth_user_token_new(): test mode enabled");
+		DEBUG("%s(): test mode enabled", __func__);
 		unsigned char seed[randombytes_SEEDBYTES];
 		memcpy(seed, payload->senderkey.iov_base, randombytes_SEEDBYTES);
 		randombytes_buf_deterministic(token->token, sizeof token->token, seed);
 	}
-	else randombytes_buf(token->token, sizeof token->token);
+	else
+#endif
+		randombytes_buf(token->token, sizeof token->token);
 	sodium_bin2hex(token->hextoken, AUTH_HEXLEN, token->token, sizeof token->token);
 	token->expires = htobe64((uint64_t)time(NULL) + 60 * 15); /* expires in 15 minutes */
 	DEBUG("token created: %s", token->hextoken);
@@ -725,6 +737,7 @@ static void auth_op_auth_service(lc_message_t *msg)
 
 	/* TODO: logfile entry */
 
+	DEBUG("cap token length is %zu", cap.iov_len);
 	struct iovec iovcode = { .iov_base = &code, .iov_len = 1 };
 	if (wire_pack_pre(&data, &cap, 1, &iovcode, 1) == -1) {
 		perror("wire_pack_pre()");

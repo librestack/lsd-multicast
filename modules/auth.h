@@ -12,6 +12,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#define AUTH_TESTMODE 1
+
 /* Ok, we need a flexible, extensible binary protocol
  *
  * [opcode][flags][fields...]
