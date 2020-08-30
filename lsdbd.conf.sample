@@ -1,4 +1,0 @@
-# global configs
-loglevel 127
-daemon true	# daemonize
-debug true
