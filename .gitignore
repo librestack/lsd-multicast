@@ -8,3 +8,6 @@ lsdbd
 *.so
 src/keymgr
 tmp/
+cov-int/
+lsdbd.tgz
+
