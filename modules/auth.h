@@ -13,22 +13,6 @@
 #include <sys/types.h>
 
 #define AUTH_TESTMODE 1
-
-/* Ok, we need a flexible, extensible binary protocol
- *
- * [opcode][flags][fields...]
- * opcode determines how packet will be handled and which fields to expect
- *
- * fields will be assigned via bitmasks to opcodes which use them
- *
- * each field will be [size][data]
- * where size is a char (8 bits) if all bits are set, size overflows to the next
- * byte, allowing for extensible sizes up to any limit we require
- * 
- * opcode and flags will use half a byte each and can also overflow
- * if opcode overflows to a whole byte or more, flags becomes a whole byte
- * minimum */
-
 #define AUTH_HEXLEN crypto_box_PUBLICKEYBYTES * 2 + 1
 
 #define AUTH_OPCODES(X) \
