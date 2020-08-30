@@ -1,4 +1,4 @@
-# The Librestack Database Daemon (LSDBD)
+# Librecast Modular Multicast Daemon
 
 <a href="https://opensource.org"><img height="150" align="right" src="https://opensource.org/files/OSIApprovedCropped.png" alt="Open Source Initiative Approved License logo"></a>
 
@@ -7,7 +7,7 @@
        src="https://scan.coverity.com/projects/21679/badge.svg"/>
 </a>
 
-Modular Multicast Database Daemon.
+Modular Multicast Daemon.
 
 ## Status
 
