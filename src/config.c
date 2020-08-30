@@ -76,9 +76,12 @@ int config_modules_load(void)
 		DEBUG("loading module '%s'", h->module);
 		mod->name = h->module;
 		mod->handle = dlopen(mod->name, RTLD_LAZY);
-		if (mod->handle) { DEBUG("%s loaded", mod->name); }
+		if (mod->handle) {
+			DEBUG("%s loaded", mod->name);
+		}
 		else {
 			DEBUG("failed to load %s: '%s'", mod->name, dlerror());
+			continue;
 		}
 		if ((mod->init = dlsym(mod->handle, "init"))) mod->init(&config);
 		mod->finit = dlsym(mod->handle, "finit");
