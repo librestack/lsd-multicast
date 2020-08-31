@@ -47,7 +47,7 @@ int main()
 
 	/* create thread to run tests */
 	pthread_t thread;
-	pthread_attr_t attr = {};
+	pthread_attr_t attr = {0};
 	pthread_attr_init(&attr);
 	pthread_create(&thread, &attr, testthread, NULL);
 

@@ -144,7 +144,7 @@ void runtests(pid_t pid)
 	sigaction(SIGINT, &sa, NULL);
 	pthread_t thread;
 	pthread_t self = pthread_self();
-	pthread_attr_t attr = {};
+	pthread_attr_t attr = {0};
 	pthread_attr_init(&attr);
 	pthread_create(&thread, &attr, testthread, &self);
 	nanosleep(&t, NULL); /* wait for tests to run */

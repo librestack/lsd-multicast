@@ -23,12 +23,12 @@ int main()
 	struct iovec pass = { .iov_base = "password" };
 	struct iovec serv = { .iov_base = "service" };
 	struct iovec iovs[] = { repl, user, mail, pass, serv };
-	struct iovec iovc[5] = {};
+	struct iovec iovc[5] = {0};
 	const int iov_count = sizeof iovs / sizeof iovs[0];
 	size_t len_check = 2, len_packed;
 	uint8_t flags = 0;
 	uint8_t op = 2;
-	void *ptr;
+	char *ptr;
 
 	flags |= 42;
 
@@ -56,7 +56,7 @@ int main()
 	test_assert(flags == flags_check, "flags set 0x%x == 0x%x", flags, flags_check);
 
 	/* verify packed data */
-	ptr = data.iov_base + 2;
+	ptr = (char *)data.iov_base + 2;
 	for (int i = 0; i < iov_count; i++) {
 		uint64_t n = 0, shift = 0;
 		uint8_t b;
@@ -88,7 +88,7 @@ int main()
 
 	data.iov_len = 3;
 	data.iov_base = malloc(data.iov_len);
-	memset(data.iov_base + 2, 0x80, 1);
+	memset((char *)data.iov_base + 2, 0x80, 1);
 	errno = 0;
 	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == -1,
 			"use continuation bit to attempt read beyond end of data (EILSEQ)");
@@ -97,16 +97,16 @@ int main()
 
 	data.iov_len = 4;
 	data.iov_base = malloc(data.iov_len);
-	memset(data.iov_base + 2, htole64(1), 1);
-	memset(data.iov_base + 3, 'a', 1);
+	memset((char *)data.iov_base + 2, htole64(1), 1);
+	memset((char *)data.iov_base + 3, 'a', 1);
 	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == (ssize_t)data.iov_len,
 			"use length to read exact end of data (OK)");
 	free(data.iov_base);
 
 	data.iov_len = 4;
 	data.iov_base = malloc(data.iov_len);
-	memset(data.iov_base + 2, htole64(2), 1); /* try to read one byte beyond end of data */
-	memset(data.iov_base + 3, 'a', 1);
+	memset((char *)data.iov_base + 2, htole64(2), 1); /* try to read one byte beyond end of data */
+	memset((char *)data.iov_base + 3, 'a', 1);
 	errno = 0;
 	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == -1,
 			"use length to read beyond end of data (EBADMSG)");
