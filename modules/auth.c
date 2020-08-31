@@ -561,6 +561,7 @@ int auth_user_token_valid(auth_user_token_t *token)
 
 static void auth_op_noop(lc_message_t *msg)
 {
+	(void)msg;
 	TRACE("auth.so %s()", __func__);
 };
 
@@ -622,16 +623,6 @@ reply_to_sender:
 	free(p.data);
 };
 
-static void auth_op_user_delete(lc_message_t *msg)
-{
-	TRACE("auth.so %s()", __func__);
-};
-
-static void auth_op_user_lock(lc_message_t *msg)
-{
-	TRACE("auth.so %s()", __func__);
-};
-
 static void auth_op_user_unlock(lc_message_t *msg)
 {
 	TRACE("auth.so %s()", __func__);
@@ -657,21 +648,6 @@ static void auth_op_user_unlock(lc_message_t *msg)
 		auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_USER_UNLOCK, code);
 	free(p.data);
 	free(data.iov_base);
-};
-
-static void auth_op_key_add(lc_message_t *msg)
-{
-	TRACE("auth.so %s()", __func__);
-};
-
-static void auth_op_key_delete(lc_message_t *msg)
-{
-	TRACE("auth.so %s()", __func__);
-};
-
-static void auth_op_key_replace(lc_message_t *msg)
-{
-	TRACE("auth.so %s()", __func__);
 };
 
 static void auth_op_auth_service(lc_message_t *msg)

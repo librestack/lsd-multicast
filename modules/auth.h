@@ -18,12 +18,12 @@
 #define AUTH_OPCODES(X) \
 	X(0x0, AUTH_OP_NOOP,		"NOOP",		auth_op_noop) \
 	X(0x1, AUTH_OP_USER_ADD,	"USER_ADD",	auth_op_user_add) \
-	X(0x2, AUTH_OP_USER_DEL,	"USER_DEL",	auth_op_user_delete) \
-	X(0x3, AUTH_OP_USER_LOCK,	"USER_LOCK",	auth_op_user_lock) \
+	X(0x2, AUTH_OP_USER_DEL,	"USER_DEL",	auth_op_noop) \
+	X(0x3, AUTH_OP_USER_LOCK,	"USER_LOCK",	auth_op_noop) \
 	X(0x4, AUTH_OP_USER_UNLOCK,	"USER_UNLOCK",	auth_op_user_unlock) \
-	X(0x5, AUTH_OP_KEY_ADD,		"KEY_ADD",	auth_op_key_add) \
-	X(0x6, AUTH_OP_KEY_DEL,		"KEY_DEL",	auth_op_key_delete) \
-	X(0x7, AUTH_OP_KEY_REP,		"KEY_REP",	auth_op_key_replace) \
+	X(0x5, AUTH_OP_KEY_ADD,		"KEY_ADD",	auth_op_noop) \
+	X(0x6, AUTH_OP_KEY_DEL,		"KEY_DEL",	auth_op_noop) \
+	X(0x7, AUTH_OP_KEY_REP,		"KEY_REP",	auth_op_noop) \
 	X(0x8, AUTH_OP_AUTH_SERV,	"AUTH_SERV",	auth_op_auth_service)
 #undef X
 
