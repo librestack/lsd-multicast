@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2020 Brett Sheffield <bacs@librecast.net>
 
-CFLAGS := -Wall -Wextra -g
+CFLAGS := -Wall -Wextra -Wpedantic -g
 export CFLAGS
 INSTALLDIR := /usr/local/bin
 export INSTALLDIR
