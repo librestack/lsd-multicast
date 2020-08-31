@@ -477,18 +477,6 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *iov, size_t iovlen)
 	return 0;
 }
 
-int auth_serv_token_get(struct iovec *tok, struct iovec *user, struct iovec *pass, struct iovec *serv)
-{
-	/* TODO: create token with:
-	 * - senderkey
-	 * - resource / service
-	 * - flags (read / write etc)
-	 * - signed
-	 */
-
-	return 0;
-}
-
 int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 {
 #ifdef AUTH_TESTMODE
@@ -568,7 +556,7 @@ delete_token:
 
 int auth_user_token_valid(auth_user_token_t *token)
 {
-	return (be64toh(token->expires) >= time(NULL));
+	return (be64toh(token->expires) >= (uint64_t)time(NULL));
 }
 
 static void auth_op_noop(lc_message_t *msg)

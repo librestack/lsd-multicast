@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2020 Brett Sheffield <bacs@librecast.net>
 
-CFLAGS += -Wall -g -shared -fPIC
+CFLAGS += -Wall -Wextra -g -shared -fPIC
 MODULES := echo.so auth.so
 NOTOBJS := ../src/lsdbd.o ../src/keymgr.o
 COMMON_OBJECTS := ../src/lex.yy.o ../src/y.tab.o $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))

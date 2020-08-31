@@ -62,19 +62,6 @@ int main()
 	test_assert(auth_user_pass_verify(&bad, &pass) == -1,
 			"auth_user_pass_verify() - GOOD password, BAD user");
 
-
-	/* TODO: try login (OK) */
-	struct iovec captoken = {0};
-	struct iovec serv = { .iov_base = "service" };
-	serv.iov_len = strlen(serv.iov_base);
-	auth_serv_token_get(&captoken, &user, &pass, &serv);
-
-	/* TODO: verify service token (crypto signature, has my pub key, expiry) */
-
-	/* TODO: try invalid login email (EKEYREJECTED) */
-
-	/* TODO: try expired token (EKEYEXPIRED) */
-
 	test_assert(auth_user_create(userid, &mail, NULL) == -1,
 			"can't create two users with same email");
 	test_assert(errno == EADDRINUSE, "duplicate email (EADDRINUSE)");
