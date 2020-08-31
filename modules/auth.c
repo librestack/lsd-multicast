@@ -357,7 +357,7 @@ int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 	lc_channel_free(chan);
 	lc_socket_close(sock);
 	return 0;
-};
+}
 
 static void auth_reply_code(struct iovec *repl, struct iovec *clientkey, uint8_t op, uint8_t code)
 {
@@ -563,7 +563,7 @@ static void auth_op_noop(lc_message_t *msg)
 {
 	(void)msg;
 	TRACE("auth.so %s()", __func__);
-};
+}
 
 static void auth_op_user_add(lc_message_t *msg)
 {
@@ -621,7 +621,7 @@ static void auth_op_user_add(lc_message_t *msg)
 reply_to_sender:
 	auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_USER_ADD, code);
 	free(p.data);
-};
+}
 
 static void auth_op_user_unlock(lc_message_t *msg)
 {
@@ -648,7 +648,7 @@ static void auth_op_user_unlock(lc_message_t *msg)
 		auth_reply_code(&fields[repl], &p.senderkey, AUTH_OP_USER_UNLOCK, code);
 	free(p.data);
 	free(data.iov_base);
-};
+}
 
 static void auth_op_auth_service(lc_message_t *msg)
 {
@@ -716,7 +716,7 @@ reply_to_sender:
 	free(data.iov_base);
 	free(cap.iov_base);
 	if (!fields[user].iov_len) free(userid.iov_base);
-};
+}
 
 void init(config_t *c)
 {
