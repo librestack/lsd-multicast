@@ -44,7 +44,7 @@ int main()
 		}
 	}
 	len_packed = len_check;
-	test_assert(wire_pack(&data, iovs, iov_count, op, flags) == len_check, "pack some data");
+	test_assert(wire_pack(&data, iovs, iov_count, op, flags) == (ssize_t)len_check, "pack some data");
 	test_assert(data.iov_len == len_check,"data.iov_len (%zu) == (%zu) len_check", data.iov_len, len_check);
 
 	/* check opcode & flags */
@@ -77,7 +77,7 @@ int main()
 	flags_check = 0;
 	int res;
 	res = wire_unpack(&data, iovc, iov_count, &op_check, &flags_check);
-	test_assert(res == len_packed, "unpack (expected %i, returned %i)", len_packed, res);
+	test_assert((size_t)res == len_packed, "unpack (expected %i, returned %i)", len_packed, res);
 	test_assert(op_check == op, "opcode");
 	test_assert(flags_check == flags, "flags");
 	for (int i = 0; i < iov_count; i++) {
@@ -99,7 +99,7 @@ int main()
 	data.iov_base = malloc(data.iov_len);
 	memset(data.iov_base + 2, htole64(1), 1);
 	memset(data.iov_base + 3, 'a', 1);
-	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == data.iov_len,
+	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == (ssize_t)data.iov_len,
 			"use length to read exact end of data (OK)");
 	free(data.iov_base);
 

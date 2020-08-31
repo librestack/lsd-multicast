@@ -51,8 +51,8 @@ int main()
 	wire_unpack_pre(&data, iovs, iov_count, pre, pre_count);
 
 	expires = be64toh(expires);
-	test_assert(expires > time(NULL) + config.handlers->token_duration - 5, "check expires");
-	test_assert(expires <= time(NULL) + config.handlers->token_duration, "check expires");
+	test_assert(expires > (uint64_t)time(NULL) + config.handlers->token_duration - 5, "check expires");
+	test_assert(expires <= (uint64_t)time(NULL) + config.handlers->token_duration, "check expires");
 	test_expectiov(&clientkey, &iovs[0]);
 	test_expectiov(&serv, &iovs[1]);
 	test_expectiov(&user, &iovs[2]);

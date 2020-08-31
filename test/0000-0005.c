@@ -45,7 +45,7 @@ int main()
 	config.debug = 1;
 	config.loglevel = 79;
 	lctx = lc_ctx_new();
-	test_assert (sodium_init >= 0, "libsodium initialized");
+	test_assert (sodium_init() >= 0, "libsodium initialized");
 	test_assert(lc_db_open(lctx, mkdtemp(dbpath)) == 0, "lc_db_open() - open temp db");
 	logtime("starting write");
 	for (int i = 1; i <= limit; i++) {
