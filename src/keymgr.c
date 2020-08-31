@@ -6,6 +6,7 @@
 
 int main(int argc, char **argv)
 {
+	(void)argc; (void)argv;
 	unsigned char pk_sign[crypto_sign_PUBLICKEYBYTES];
 	unsigned char sk_sign[crypto_sign_SECRETKEYBYTES];
 	unsigned char pk_box[crypto_box_PUBLICKEYBYTES];

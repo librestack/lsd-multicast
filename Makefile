@@ -1,8 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (c) 2020 Brett Sheffield <bacs@librecast.net>
 
-INSTALLDIR=/usr/local/bin
+CFLAGS := -Wall -Wextra -g
+export CFLAGS
+INSTALLDIR := /usr/local/bin
+export INSTALLDIR
 PROGRAM := lsdbd
+export PROGRAM
 COVERITY_DIR := cov-int
 COVERITY_TGZ := $(PROGRAM).tgz
 
