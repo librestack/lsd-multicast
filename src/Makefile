@@ -16,11 +16,6 @@ keymgr: keymgr.o
 
 keymgr.o:
 
-#mail: LDFLAGS += -lcurl
-#mail: mail.o
-
-#mail.o:
-
 config.o: config.h lex.h
 
 opts.o: opts.h
@@ -37,9 +32,9 @@ y.tab.h: grammar.y
 	$(YACC) -d $^
 
 y.tab.c: grammar.y
-	$(YACC) $^
 
-lex.h lex.yy.c: lexer.l y.tab.h
+lex.h: lex.yy.c
+lex.yy.c: lexer.l y.tab.h
 	$(LEX) --header-file=lex.h lexer.l
 
 .PHONY: clean
