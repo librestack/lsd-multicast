@@ -59,9 +59,9 @@ ssize_t wire_pack(struct iovec *data, struct iovec iovs[], int iov_count, uint8_
 
 ssize_t wire_unpack_7bit(struct iovec *data, struct iovec iovs[], int iov_count, size_t offset)
 {
-	char *ptr = (char *)data->iov_base + offset;
+	unsigned char *ptr = (unsigned char *)data->iov_base + offset;
 	size_t len;
-	char *endptr = (char *)data->iov_base + data->iov_len;
+	unsigned char *endptr = (unsigned char *)data->iov_base + data->iov_len;
 	for (int i = 0; i < iov_count && ptr < endptr; i++) {
 		uint64_t n = 0, shift = 0;
 		uint8_t b;
@@ -70,7 +70,7 @@ ssize_t wire_unpack_7bit(struct iovec *data, struct iovec iovs[], int iov_count,
 				errno = EILSEQ;
 				return -1;
 			}
-			b = ((uint8_t *)ptr++)[0];
+			b = *ptr++;
 			n |= (b & 0x7f) << shift;
 			shift += 7;
 		} while (b & 0x80);
