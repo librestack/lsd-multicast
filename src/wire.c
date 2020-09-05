@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-ssize_t wire_pack_7bit(struct iovec *data, struct iovec iovs[], int iov_count, size_t offset)
+ssize_t wire_pack_7bit(struct iovec *data, const struct iovec iovs[], int iov_count, size_t offset)
 {
 	uint64_t n;
 	unsigned char *ptr = (unsigned char *)data->iov_base + offset;
@@ -18,8 +18,8 @@ ssize_t wire_pack_7bit(struct iovec *data, struct iovec iovs[], int iov_count, s
 	return data->iov_len;
 }
 
-ssize_t wire_pack_pre(struct iovec *data, struct iovec iovs[], int iov_count,
-		struct iovec *pre, int pre_count)
+ssize_t wire_pack_pre(struct iovec *data, const struct iovec iovs[], int iov_count,
+		const struct iovec *pre, int pre_count)
 {
 	size_t offset = 0;
 	char *ptr;
@@ -47,7 +47,7 @@ ssize_t wire_pack_pre(struct iovec *data, struct iovec iovs[], int iov_count,
 	return wire_pack_7bit(data, iovs, iov_count, offset);
 }
 
-ssize_t wire_pack(struct iovec *data, struct iovec iovs[], int iov_count, uint8_t op, uint8_t flags)
+ssize_t wire_pack(struct iovec *data, const struct iovec iovs[], int iov_count, uint8_t op, uint8_t flags)
 {
 	struct iovec pre[2] = {0};
 	pre[0].iov_base = &op;
@@ -57,7 +57,7 @@ ssize_t wire_pack(struct iovec *data, struct iovec iovs[], int iov_count, uint8_
 	return wire_pack_pre(data, iovs, iov_count, pre, 2);
 }
 
-ssize_t wire_unpack_7bit(struct iovec *data, struct iovec iovs[], int iov_count, size_t offset)
+ssize_t wire_unpack_7bit(const struct iovec *data, struct iovec iovs[], int iov_count, size_t offset)
 {
 	unsigned char *ptr = (unsigned char *)data->iov_base + offset;
 	size_t len;
@@ -86,7 +86,7 @@ ssize_t wire_unpack_7bit(struct iovec *data, struct iovec iovs[], int iov_count,
 	return data->iov_len;
 }
 
-ssize_t wire_unpack_pre(struct iovec *data, struct iovec iovs[], int iov_count,
+ssize_t wire_unpack_pre(const struct iovec *data, struct iovec iovs[], int iov_count,
 		struct iovec pre[], int pre_count)
 {
 	size_t offset = 0;
@@ -97,7 +97,7 @@ ssize_t wire_unpack_pre(struct iovec *data, struct iovec iovs[], int iov_count,
 	return wire_unpack_7bit(data, iovs, iov_count, offset);
 }
 
-ssize_t wire_unpack(struct iovec *data, struct iovec iovs[], int iov_count,
+ssize_t wire_unpack(const struct iovec *data, struct iovec iovs[], int iov_count,
 		uint8_t *op, uint8_t *flags)
 {
 	struct iovec pre[2] = {0};
