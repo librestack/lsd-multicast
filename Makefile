@@ -18,10 +18,10 @@ install: all
 	cd src && $(MAKE) $@
 
 src:
-	cd $@ && $(MAKE)
+	$(MAKE) -C $@
 
 modules:
-	cd $@ && $(MAKE) -B
+	$(MAKE) -B -C $@
 
 clean realclean:
 	cd src && $(MAKE) $@
