@@ -6,12 +6,12 @@
 ssize_t wire_pack_7bit(struct iovec *data, struct iovec iovs[], int iov_count, size_t offset)
 {
 	uint64_t n;
-	char *ptr = (char *)data->iov_base + offset;
+	unsigned char *ptr = (unsigned char *)data->iov_base + offset;
 	for (int i = 0; i < iov_count; i++) {
 		/* encode length as bytes with 7 bits + overflow bit */
 		for (n = htole64(iovs[i].iov_len); n > 0x7f; n >>= 7)
-			memset(ptr++, 0x80 | n, 1);
-		memset(ptr++, n, 1);
+			*ptr++ = 0x80 | n;
+		*ptr++ =  n;
 		memcpy(ptr, iovs[i].iov_base, iovs[i].iov_len);
 		ptr += iovs[i].iov_len;
 	}
