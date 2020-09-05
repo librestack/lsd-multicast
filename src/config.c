@@ -45,6 +45,7 @@ void config_free(void)
 
 int config_include(char *configfile)
 {
+	int ret = 0;
 	FILE *fd;
 	fprintf(stderr, "importing config '%s'\n", configfile);
 	if ((fd = fopen(configfile, "r")) == NULL) {
@@ -53,10 +54,10 @@ int config_include(char *configfile)
 	}
 	yyin = fd;
 	yypush_buffer_state(yy_create_buffer(yyin, YY_BUF_SIZE));
-	while (yyparse());
+	ret = yyparse();
 	yylex_destroy();
 	fclose(fd);
-	return 0;
+	return ret;
 }
 
 int config_modules_load(void)
@@ -100,12 +101,13 @@ void config_modules_unload(void)
 
 int config_parse(void)
 {
+	int ret = 0;
 	if (!isatty(0)) {
-		while (yyparse());
+		ret = yyparse();
 		yylex_destroy();
 	}
 	if (config.configfile) {
-		config_include(config.configfile);
+		ret = config_include(config.configfile);
 	}
-	return 0;
+	return ret;
 }
