@@ -139,8 +139,8 @@ handler:
 	|
 	CHANNEL	WORD BRACKETOPEN DBLQUOTEDSTRING BRACKETCLOSE
 	{
-		fprintf(stderr, "handler channel = %s(\"%s\")\n", $3, $4);
-		handler.channelhash = $3;
+		fprintf(stderr, "handler channel = %s(\"%s\")\n", $2, $4);
+		handler.channelhash = $2;
 		handler.channel = $4;
 	}
 	|
