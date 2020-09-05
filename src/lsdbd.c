@@ -15,7 +15,6 @@ int main(int argc, char *argv[])
 	opts_parse(argc, argv);
 	config_parse();
 	server_start();
-	server_stop();
 	config_free();
 	return 0;
 }
