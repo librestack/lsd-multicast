@@ -4,7 +4,6 @@
 #ifndef _LSDM_CONFIG_H
 #define _LSDM_CONFIG_H 1
 
-#include "y.tab.h"
 #include <librecast/types.h>
 
 #define CONFIG_LOGLEVEL_MAX 127

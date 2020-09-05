@@ -8,6 +8,7 @@
 #include "config.h"
 #include "log.h"
 #include "lex.h"
+#include "y.tab.h"
 
 config_t config = {
 	.loglevel = 0,
