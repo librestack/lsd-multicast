@@ -26,7 +26,7 @@ void server_stop(void)
 	kill(getpid(), SIGINT);
 }
 
-int server_start(void)
+void server_start(void)
 {
 	struct sigaction sa = { .sa_handler = sighandler };
 	lc_ctx_t *lctx;
@@ -37,26 +37,26 @@ int server_start(void)
 	DEBUG("Starting server");
 	if (!config.handlers) {
 		INFO("No handlers configured.");
-		return 0;
+		return;
 	}
 	sigemptyset(&sa.sa_mask);
 	sigaction(SIGINT, &sa, NULL);
 	lctx = lc_ctx_new();
-	config_modules_load();
-	mod = config.mods;
-	for (handler_t *h = config.handlers; h; h = h->next) {
-		DEBUG("starting handler on channel '%s'", h->channel);
-		if (!h->module) continue;
-		if (!mod->handle_msg) continue;
-		sock = lc_socket_new(lctx);
-		chan = lc_channel_new(lctx, h->channel);
-		lc_channel_bind(sock, chan);
-		lc_channel_join(chan);
-		lc_socket_listen(sock, mod->handle_msg, mod->handle_err);
-		mod++;
+	if (config_modules_load()) {
+		mod = config.mods;
+		for (handler_t *h = config.handlers; h; h = h->next) {
+			DEBUG("starting handler on channel '%s'", h->channel);
+			if (!h->module) continue;
+			if (!mod->handle_msg) continue;
+			sock = lc_socket_new(lctx);
+			chan = lc_channel_new(lctx, h->channel);
+			lc_channel_bind(sock, chan);
+			lc_channel_join(chan);
+			lc_socket_listen(sock, mod->handle_msg, mod->handle_err);
+			mod++;
+		}
+		while (running) pause();
 	}
-	while (running) pause();
-	lc_ctx_free(lctx);
 	config_modules_unload();
-	return 0;
+	lc_ctx_free(lctx);
 }

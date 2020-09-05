@@ -5,6 +5,6 @@
 #define _LSDM_SERVER_H 1
 
 void	server_stop();
-int	server_start();
+void	server_start();
 
 #endif /* _LSDM_SERVER_H */

@@ -61,9 +61,10 @@ int config_include(char *configfile)
 
 int config_modules_load(void)
 {
-	TRACE("%s()", __func__);
+	int i = 0;
 	module_t *mod;
 
+	TRACE("%s()", __func__);
 	if (!config.modules) return 0;
 	mod = config.mods = calloc(config.modules, sizeof(module_t));
 	for (handler_t *h = config.handlers; h; h = h->next) {
@@ -83,9 +84,9 @@ int config_modules_load(void)
 		if ((*(void **)(&mod->init) = dlsym(mod->handle, "init"))) mod->init(&config);
 		*(void **)(&mod->finit) = dlsym(mod->handle, "finit");
 		*(void **)(&mod->handle_err) = dlsym(mod->handle, "handle_err");
-		mod++;
+		mod++; i++;
 	}
-	return config.modules;
+	return i;
 }
 
 void config_modules_unload(void)

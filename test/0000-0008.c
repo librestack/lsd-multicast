@@ -52,7 +52,7 @@ int main()
 	pthread_create(&thread, &attr, testthread, NULL);
 
 	/* start server */
-	test_assert(server_start() == 0, "server_start()");
+	server_start();
 
 	/* wait for test thread to complete */
 	pthread_join(thread, NULL);

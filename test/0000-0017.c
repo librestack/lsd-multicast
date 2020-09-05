@@ -166,7 +166,7 @@ int main()
 	else {
 		auth_init();
 		close(1); /* prevent server messing up test output */
-		assert(server_start() == 0);
+		server_start();
 		auth_free();
 	}
 	config_free();

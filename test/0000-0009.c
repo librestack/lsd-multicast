@@ -159,7 +159,7 @@ int main()
 		runtests(pid);
 	else {
 		close(1); /* prevent server messing up test output */
-		assert(server_start() == 0);
+		server_start();
 	}
 	config_free();
 	return fails;

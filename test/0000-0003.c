@@ -27,9 +27,7 @@ int main()
 	pthread_attr_t attr = {0};
 	pthread_attr_init(&attr);
 	pthread_create(&thread, &attr, testthread, NULL);
-
-	test_assert(server_start() == 0, "server_start()");
-
+	server_start();
 	pthread_join(thread, NULL);
 	config_free();
 
