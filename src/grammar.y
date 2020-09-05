@@ -192,7 +192,7 @@ handler:
 	PORT NUMBER
 	{
 		fprintf(stderr, "handler port = %i\n", $2);
-		if ($2 < 0 || $2 > USHRT_MAX)
+		if ($2 < 0 || $2 > UINT16_MAX)
 			fprintf(stderr, "invalid handler port on line: %i\n", lineno);
 		else
 			handler.port = $2;
