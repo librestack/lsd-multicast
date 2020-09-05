@@ -47,6 +47,7 @@ int server_start(void)
 	for (handler_t *h = config.handlers; h; h = h->next) {
 		DEBUG("starting handler on channel '%s'", h->channel);
 		if (!h->module) continue;
+		if (!mod->handle_msg) continue;
 		sock = lc_socket_new(lctx);
 		chan = lc_channel_new(lctx, h->channel);
 		lc_channel_bind(sock, chan);
