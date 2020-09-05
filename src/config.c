@@ -15,24 +15,18 @@ config_t config = {
 	.modules = 0,
 };
 
-static void config_free_ptr(void *ptr)
-{
-	free(ptr);
-	ptr = NULL;
-}
-
 static void config_free_handlers(void) {
 	handler_t *h, *p;
 	p = config.handlers;
 	while (p) {
-		config_free_ptr(p->channel);
-		config_free_ptr(p->channelhash);
-		config_free_ptr(p->dbname);
-		config_free_ptr(p->dbpath);
-		config_free_ptr(p->key_private);
-		config_free_ptr(p->key_public);
-		config_free_ptr(p->module);
-		config_free_ptr(p->scope);
+		free(p->channel);
+		free(p->channelhash);
+		free(p->dbname);
+		free(p->dbpath);
+		free(p->key_private);
+		free(p->key_public);
+		free(p->module);
+		free(p->scope);
 		h = p;
 		p = p->next;
 		free(h);
@@ -42,10 +36,10 @@ static void config_free_handlers(void) {
 
 void config_free(void)
 {
-	config_free_ptr(config.cert);
-	config_free_ptr(config.configfile);
-	config_free_ptr(config.key);
-	config_free_ptr(config.modpath);
+	free(config.cert);
+	free(config.configfile);
+	free(config.key);
+	free(config.modpath);
 	config_free_handlers();
 }
 
