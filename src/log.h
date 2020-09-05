@@ -15,12 +15,13 @@
 	X(16,   LOG_TRACE,      "trace")                                \
 	X(32,   LOG_FULLTRACE,  "fulltrace")                            \
 	X(64,   LOG_DEBUG,      "debug")
-#undef X
 
 #define LOG_ENUM(id, name, desc) name = id,
 enum {
 	LOG_LEVELS(LOG_ENUM)
 };
+#undef LOG_LEVELS
+#undef LOG_ENUM
 
 #define LOG_LOGLEVEL_DEFAULT 15
 
