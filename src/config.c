@@ -90,9 +90,9 @@ int config_modules_load(void)
 
 void config_modules_unload(void)
 {
-	for (module_t *mod = config.mods; mod && mod->handle; mod++) {
-		if (mod->finit) mod->finit();
-		dlclose(mod->handle);
+	for (int i = 0; i < config.modules && config.mods[i].handle; i++) {
+		if (config.mods[i].finit) config.mods[i].finit();
+		dlclose(config.mods[i].handle);
 	}
 	free(config.mods);
 }
