@@ -48,7 +48,7 @@ int config_include(char *configfile)
 	FILE *fd;
 	fprintf(stderr, "importing config '%s'\n", configfile);
 	if ((fd = fopen(configfile, "r")) == NULL) {
-		perror(__func__);
+		perror(configfile);
 		return -1;
 	}
 	yyin = fd;
