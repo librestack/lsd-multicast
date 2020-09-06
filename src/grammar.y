@@ -14,6 +14,7 @@ int yywrap(void);
 int handlers = 0;
 handler_t *handler_last;
 handler_t handler = {
+	.usertoken_expires = 60 * 15,
 	.token_duration = 360
 };
 
@@ -55,6 +56,7 @@ handler_t handler = {
 %token <sval> SLASH
 %token <sval> TESTMODE
 %token <ival> TOKEN_DURATION
+%token <ival> USERTOKEN_EXPIRES
 %token <sval> WORD
 %token <sval> V6ADDR
 
@@ -208,6 +210,12 @@ handler:
 	{
 		fprintf(stderr, "token_duration = %i\n", $2);
 		handler.token_duration = $2;
+	}
+|
+	USERTOKEN_EXPIRES NUMBER
+	{
+		fprintf(stderr, "usertoken.duratin = %i\n", $2);
+		handler.usertoken_expires = $2;
 	}
 	;
 %%

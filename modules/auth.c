@@ -490,7 +490,7 @@ int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 #endif
 		randombytes_buf(token->token, sizeof token->token);
 	sodium_bin2hex(token->hextoken, AUTH_HEXLEN, token->token, sizeof token->token);
-	token->expires = htobe64((uint64_t)time(NULL) + 60 * 15); /* expires in 15 minutes */
+	token->expires = htobe64((uint64_t)time(NULL) + config.handlers->usertoken_expires);
 	DEBUG("token created: %s", token->hextoken);
 	return 0;
 }

@@ -19,6 +19,7 @@ struct handler_s {
 	char *		key_public;
 	char *		module;
 	char *		scope;
+	time_t		usertoken_expires;
 	time_t		token_duration;
 	unsigned short  port;
 };
