@@ -16,6 +16,7 @@ int main()
 	config.loglevel = 127;
 
 	struct iovec data;
+	struct iovec pre[2];
 	struct iovec repl = { .iov_base = "reply" };
 	struct iovec user = { .iov_base = "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuoooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooou" };
 	//struct iovec user = { .iov_base = "u" };
@@ -111,6 +112,41 @@ int main()
 	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == -1,
 			"use length to read beyond end of data (EBADMSG)");
 	test_assert(errno == EBADMSG, "errno == EBADMSG");
+	free(data.iov_base);
+
+	data.iov_len = 8;
+	data.iov_base = malloc(data.iov_len);
+	/* test wire_unpack_pre with 2 fields of lengths 2 and 4 followed by 1 byte of data */
+	pre[0].iov_len = 2;
+	pre[0].iov_base = malloc(pre[0].iov_len);
+	memcpy((char *)data.iov_base + 0, "xy", 2);
+	pre[1].iov_len = 4;
+	pre[1].iov_base = malloc(pre[1].iov_len);
+	memcpy((char *)data.iov_base + 2, "abcd", 4);
+	memset((char *)data.iov_base + 6, 1, 1);
+	memset((char *)data.iov_base + 7, '=', 1);
+	errno = 0;
+	test_assert(wire_unpack_pre(&data, iovc, iov_count, pre, 2) == (ssize_t)data.iov_len,
+			"use length with pre to read exact end of data (OK)");
+	free(pre[0].iov_base);
+	free(pre[1].iov_base);
+	free(data.iov_base);
+
+	data.iov_len = 8;
+	data.iov_base = malloc(data.iov_len);
+	/* test wire_unpack_pre with 1 fields of lengths 2 and 7 (data is incomplete) */
+	pre[0].iov_len = 2;
+	pre[0].iov_base = malloc(pre[0].iov_len);
+	memcpy((char *)data.iov_base + 0, "xy", 2);
+	pre[1].iov_len = 7;
+	pre[1].iov_base = malloc(pre[1].iov_len);
+	memcpy((char *)data.iov_base + 2, "abcdef", 6);
+	errno = 0;
+	test_assert(wire_unpack_pre(&data, iovc, iov_count, pre, 2) == -1,
+			"use length with pre to read beyond end of data (EBADMSG)");
+	test_assert(errno == EBADMSG, "errno == EBADMSG");
+	free(pre[0].iov_base);
+	free(pre[1].iov_base);
 	free(data.iov_base);
 
 	return fails;

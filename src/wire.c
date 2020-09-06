@@ -91,6 +91,10 @@ ssize_t wire_unpack_pre(const struct iovec *data, struct iovec iovs[], int iov_c
 {
 	size_t offset = 0;
 	for (int i = 0; i < pre_count; i++) {
+		if (offset + pre[i].iov_len > data->iov_len) {
+			errno = EBADMSG;
+			return -1;
+		}
 		memcpy(pre[i].iov_base, (char *)data->iov_base + offset, pre[i].iov_len);
 		offset += pre[i].iov_len;
 	}
