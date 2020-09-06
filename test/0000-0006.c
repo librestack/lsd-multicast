@@ -65,7 +65,7 @@ int main()
 			n |= (b & 0x7f) << shift;
 			shift += 7;
 		} while (b & 0x80);
-		len_check = (size_t)le64toh(n);
+		len_check = (size_t)n;
 		test_assert(iovs[i].iov_len == len_check,
 				"check length, iovs[%i] %zu == %zu", i, iovs[i].iov_len, len_check);
 		test_expectn(iovs[i].iov_base, ptr, iovs[i].iov_len); /* check data */
@@ -97,7 +97,7 @@ int main()
 
 	data.iov_len = 4;
 	data.iov_base = malloc(data.iov_len);
-	memset((char *)data.iov_base + 2, htole64(1), 1);
+	memset((char *)data.iov_base + 2, 1, 1);
 	memset((char *)data.iov_base + 3, 'a', 1);
 	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == (ssize_t)data.iov_len,
 			"use length to read exact end of data (OK)");
@@ -105,7 +105,7 @@ int main()
 
 	data.iov_len = 4;
 	data.iov_base = malloc(data.iov_len);
-	memset((char *)data.iov_base + 2, htole64(2), 1); /* try to read one byte beyond end of data */
+	memset((char *)data.iov_base + 2, 2, 1); /* try to read one byte beyond end of data */
 	memset((char *)data.iov_base + 3, 'a', 1);
 	errno = 0;
 	test_assert(wire_unpack(&data, iovc, iov_count, &op_check, &flags_check) == -1,
