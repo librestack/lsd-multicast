@@ -85,14 +85,10 @@ void test_expectiov(struct iovec *expected, struct iovec *got)
 
 void test_log(char *msg, ...)
 {
-	char *b;
 	va_list argp;
 	va_start(argp, msg);
-	b = malloc(_vscprintf(msg, argp) + 1);
-	vsprintf(b, msg, argp);
-	fprintf(stderr, "%s\n", b);
+	vfprintf(stderr, msg, argp);
 	va_end(argp);
-	free(b);
 }
 
 void test_name(char *str, ...)
