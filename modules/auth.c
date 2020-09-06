@@ -149,7 +149,7 @@ int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 
 int auth_user_bymail(struct iovec *mail, struct iovec *userid)
 {
-	DEBUG("searching for mail: %.*s", (int)mail->iov_len, (char *)mail->iov_base);
+	DEBUG("searching for mail: %.*s", FMTP(mail));
 	return auth_field_get(mail->iov_base, mail->iov_len, "user",
 			&userid->iov_base,
 			&userid->iov_len);
@@ -379,8 +379,7 @@ int auth_user_pass_verify(struct iovec *user, struct iovec *pass)
 	struct iovec nopass = { .iov_base = "*", .iov_len = 1 };
 	if (auth_field_getv(user->iov_base, AUTH_HEXLEN, "pass", &pwhash))
 	{
-		DEBUG("unable to find password for user '%.*s",
-				(int)user->iov_len, (char *)user->iov_base);
+		DEBUG("unable to find password for user '%.*s", FMTP(user));
 		pw = &nopass; /* preserve constant time */
 	}
 	else if (pw->iov_len == 0) {
@@ -517,13 +516,13 @@ uint8_t auth_user_token_use(struct iovec *token, struct iovec *pass)
 	struct iovec expires = {0};
 	char *userid;
 	auth_user_token_t tok = {0};
-	DEBUG("search for token '%.*s'", AUTH_HEXLEN - 1, (char *)token->iov_base);
+	DEBUG("search for token '%.*s'", FMTP(token));
 	if (auth_field_getv(token->iov_base, token->iov_len, "user", &user)) {
 		DEBUG("user token not found");
 		return 1;
 	}
 	assert(user.iov_len > 0);
-	DEBUG("token matches user '%.*s'", (int)user.iov_len, (char *)user.iov_base);
+	DEBUG("token matches user '%.*s'", FMTV(user));
 	if (auth_field_getv(token->iov_base, token->iov_len, "expires", &expires)) {
 		DEBUG("user token expiry not found");
 		return 1;
@@ -585,8 +584,7 @@ static void auth_op_user_add(lc_message_t *msg)
 		return;
 	}
 	if (!auth_valid_email(fields[mail].iov_base, fields[mail].iov_len)) {
-		ERROR("invalid email address: '%.*s'", (int)fields[mail].iov_len,
-				(char*)fields[mail].iov_base);
+		ERROR("invalid email address: '%.*s'", FMTV(fields[mail]));
 		code = 1;
 		goto reply_to_sender;
 	}
@@ -679,18 +677,17 @@ static void auth_op_auth_service(lc_message_t *msg)
 	else {
 		/* user not supplied, look up from mail address */
 		if (auth_user_bymail(&fields[mail], &userid)) {
-			ERROR("no user found for '%.*s'", (int)fields[mail].iov_len,
-					(char *)fields[mail].iov_base);
+			ERROR("no user found for '%.*s'", FMTV(fields[mail]));
 			code = 1;
 			goto reply_to_sender;
 		}
 	}
 	if (auth_user_pass_verify(&userid, &fields[pass])) {
-		ERROR("failed login for user %.*s", (int)userid.iov_len, (char *)userid.iov_base);
+		ERROR("failed login for user %.*s", FMTV(userid));
 		code = 1;
 		goto reply_to_sender;
 	}
-	DEBUG("successful login for user %.*s", (int)userid.iov_len, (char *)userid.iov_base);
+	DEBUG("successful login for user %.*s", FMTV(userid));
 	struct iovec iov[] = { p.senderkey, fields[serv], userid };
 	const int iovlen = sizeof iov / sizeof iov[0];
 	if (auth_serv_token_new(&cap, iov, iovlen)) {

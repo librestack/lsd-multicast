@@ -25,6 +25,8 @@ enum {
 
 #define LOG_LOGLEVEL_DEFAULT 15
 
+#define FMTV(iov) (int)(iov).iov_len, (const char *)(iov).iov_base
+#define FMTP(iov) (int)(iov)->iov_len, (const char *)(iov)->iov_base
 #define LOG(lvl, fmt, ...) if ((lvl & config.loglevel) == lvl) logmsg(lvl, fmt ,##__VA_ARGS__)
 #define BREAK(lvl, fmt, ...) {LOG(lvl, fmt ,##__VA_ARGS__); break;}
 #define CONTINUE(lvl, fmt, ...) {LOG(lvl, fmt ,##__VA_ARGS__); continue;}
@@ -37,6 +39,10 @@ enum {
 #define INFO(fmt, ...) LOG(LOG_INFO, fmt ,##__VA_ARGS__)
 #define TRACE(fmt, ...) LOG(LOG_TRACE, fmt ,##__VA_ARGS__)
 
-void logmsg(unsigned int level, const char *fmt, ...);
+void logmsg(unsigned int level, const char *fmt, ...)
+#ifdef __GNUC__
+	__attribute__((format(printf, 2 ,3)))
+#endif
+;
 
 #endif /* _LIBRESTACK_LOG */
