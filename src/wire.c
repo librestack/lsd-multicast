@@ -9,7 +9,7 @@ ssize_t wire_pack_7bit(struct iovec *data, const struct iovec iovs[], int iov_co
 	unsigned char *ptr = (unsigned char *)data->iov_base + offset;
 	for (int i = 0; i < iov_count; i++) {
 		/* encode length as bytes with 7 bits + overflow bit */
-		for (n = htole64(iovs[i].iov_len); n > 0x7f; n >>= 7)
+		for (n = iovs[i].iov_len; n > 0x7f; n >>= 7)
 			*ptr++ = 0x80 | n;
 		*ptr++ =  n;
 		memcpy(ptr, iovs[i].iov_base, iovs[i].iov_len);
@@ -33,7 +33,7 @@ ssize_t wire_pack_pre(struct iovec *data, const struct iovec iovs[], int iov_cou
 	for (int i = 0; i < iov_count; i++) {
 		/* 1 byte for length + data */
 		data->iov_len += iovs[i].iov_len + 1;
-		for (n = htole64(iovs[i].iov_len); n > 0x7f; n >>= 7)
+		for (n = iovs[i].iov_len; n > 0x7f; n >>= 7)
 			data->iov_len++; /* extra length byte */
 	}
 	ptr = data->iov_base = calloc(1, data->iov_len);
@@ -74,7 +74,7 @@ ssize_t wire_unpack_7bit(const struct iovec *data, struct iovec iovs[], int iov_
 			n |= (b & 0x7f) << shift;
 			shift += 7;
 		} while (b & 0x80);
-		len = (size_t)le64toh(n);
+		len = (size_t)n;
 		if (ptr + len > endptr) {
 			errno = EBADMSG;
 			return -1;
