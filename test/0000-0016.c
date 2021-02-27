@@ -13,9 +13,10 @@ int main()
 {
 	test_name("auth_serv_token_new()");
 	char dbpath[] = "0000-0016.tmp.XXXXXX";
+	lc_db_t *lcdb;
 	config_include("./0000-0016.conf");
 	auth_init();
-	test_assert(lc_db_open(lctx, mkdtemp(dbpath)) == 0, "lc_db_open() - open temp db");
+	test_assert((lcdb = lc_db_open(lctx, mkdtemp(dbpath))) != NULL, "lc_db_open() - open temp db");
 
 	/* create new cap token */
 	struct iovec cap_sig = {0}; /* signed token */
@@ -59,6 +60,7 @@ int main()
 
 	free(cap);
 	free(cap_sig.iov_base);
+	//lc_db_free(lcdb);
 	auth_free();
 	config_free();
 	return fails;
