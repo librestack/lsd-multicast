@@ -14,7 +14,7 @@ int main()
 	char dbpath[] = "0000-0015.tmp.XXXXXX";
 	config_include("./0000-0015.conf");
 	auth_init();
-	test_assert(lc_db_open(lctx, mkdtemp(dbpath)) == 0, "lc_db_open() - open temp db");
+	test_assert((lcdb = lc_db_open(lctx, mkdtemp(dbpath))) != NULL, "lc_db_open() - open temp db");
 
 	/* create user, set token */
 	struct iovec mail = { .iov_base = "noone@example.com" };
@@ -66,6 +66,7 @@ int main()
 			"can't create two users with same email");
 	test_assert(errno == EADDRINUSE, "duplicate email (EADDRINUSE)");
 
+	lc_db_free(lcdb);
 	auth_free();
 	config_free();
 	return fails;

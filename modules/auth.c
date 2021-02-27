@@ -68,6 +68,7 @@ int auth_field_get(char *key, size_t keylen, char *field, void *data, size_t *da
 	int ret = 0;
 	unsigned char hash[crypto_generichash_BYTES] = "";
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
+	assert(lcdb);
 	if ((ret = lc_db_get(lcdb, config.handlers->dbname, hash, sizeof hash, data, datalen))) {
 		errno = ret;
 		ret = -1;
