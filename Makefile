@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (c) 2020 Brett Sheffield <bacs@librecast.net>
+# Copyright (c) 2020-2021 Brett Sheffield <bacs@librecast.net>
 
 CFLAGS := -Wall -Wextra -Wpedantic -g
 export CFLAGS
@@ -12,7 +12,7 @@ COVERITY_TGZ := $(PROGRAM).tgz
 
 .PHONY: all clean src modules test check install
 
-all: src
+all: src modules
 
 install: all
 	cd src && $(MAKE) $@

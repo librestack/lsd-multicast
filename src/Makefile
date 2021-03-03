@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (c) 2020 Brett Sheffield <bacs@librecast.net>
+# Copyright (c) 2020-2021 Brett Sheffield <bacs@librecast.net>
 
 CFLAGS += -shared -fPIC
 OBJS = lex.yy.o y.tab.o config.o log.o opts.o server.o wire.o $(PROGRAM).o
