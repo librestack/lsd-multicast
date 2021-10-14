@@ -4,6 +4,7 @@
 #include "test.h"
 #include "../modules/auth.h"
 #include "../src/config.h"
+#include "../src/lcdb.h"
 #include "../src/wire.h"
 #include <librecast.h>
 #include <time.h>
@@ -11,12 +12,12 @@
 
 int main()
 {
-	test_name("auth_serv_token_new()");
 	char dbpath[] = "0000-0016.tmp.XXXXXX";
-	lc_db_t *lcdb;
+
+	test_name("auth_serv_token_new()");
 	config_include("./0000-0016.conf");
 	auth_init();
-	test_assert((lcdb = lc_db_open(lctx, mkdtemp(dbpath))) != NULL, "lc_db_open() - open temp db");
+	test_assert(lc_db_open(&env, mkdtemp(dbpath)) == 0, "lc_db_open() - open temp db");
 
 	/* create new cap token */
 	struct iovec cap_sig = {0}; /* signed token */
@@ -60,7 +61,6 @@ int main()
 
 	free(cap);
 	free(cap_sig.iov_base);
-	//lc_db_free(lcdb);
 	auth_free();
 	config_free();
 	return fails;

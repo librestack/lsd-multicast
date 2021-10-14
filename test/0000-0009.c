@@ -13,8 +13,6 @@
 #include <sodium.h>
 #include <unistd.h>
 
-lc_ctx_t *lctx = NULL;
-
 void *testthread(void *arg)
 {
 	test_log("test thread starting");

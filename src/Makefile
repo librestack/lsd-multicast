@@ -2,7 +2,7 @@
 # Copyright (c) 2020-2021 Brett Sheffield <bacs@librecast.net>
 
 CFLAGS += -shared -fPIC
-OBJS = lex.yy.o y.tab.o config.o log.o opts.o server.o wire.o $(PROGRAM).o
+OBJS = lex.yy.o y.tab.o config.o lcdb.o log.o opts.o server.o wire.o $(PROGRAM).o
 
 all: $(PROGRAM) keymgr
 
@@ -17,6 +17,8 @@ keymgr: keymgr.o
 keymgr.o:
 
 config.o: config.h lex.h
+
+lcdb.o: lcdb.h
 
 opts.o: opts.h
 

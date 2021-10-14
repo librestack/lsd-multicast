@@ -6,8 +6,8 @@
 
 #include <errno.h>
 #include <librecast/types.h>
-#include <librecast/db.h>
 #include <limits.h>
+#include <lsdb.h>
 #include <sodium.h>
 #include <stdint.h>
 #include <sys/socket.h>
@@ -73,7 +73,7 @@ struct auth_user_token_s {
 };
 
 extern lc_ctx_t *lctx;
-extern lc_db_t *lcdb;
+extern lsdb_env *env;
 
 void hash_field(unsigned char *hash, size_t hashlen,
 		const char *key, size_t keylen,

@@ -4,7 +4,7 @@
 CFLAGS += -shared -fPIC
 MODULES := echo.so auth.so
 NOTOBJS := ../src/lsdbd.o ../src/keymgr.o
-COMMON_OBJECTS := ../src/lex.yy.o ../src/y.tab.o $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))
+COMMON_OBJECTS := $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))
 LIBS := -lsodium
 
 all: $(MODULES)

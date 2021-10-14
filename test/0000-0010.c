@@ -4,6 +4,7 @@
 #include "test.h"
 #include "../modules/auth.h"
 #include "../src/config.h"
+#include "../src/lcdb.h"
 #include "../src/server.h"
 #include "../src/wire.h"
 #include <assert.h>
@@ -19,12 +20,15 @@ int main()
 	char userid[hexlen];
 	void *vptr = NULL;
 	size_t vlen;
+	char dbpath[] = "0000-0010.tmp.XXXXXX";
 
 	test_name("auth_field_set() / hash_field()");
-	char dbpath[] = "0000-0010.tmp.XXXXXX";
 	config_include("./0000-0010.conf");
+
 	auth_init();
-	test_assert(lc_db_open(lctx, mkdtemp(dbpath)) == 0, "lc_db_open() - open temp db");
+	assert(lctx);
+	test_assert(lc_db_open(&env, mkdtemp(dbpath)) == 0, "lc_db_open() - open temp db");
+	assert(env);
 
 	/* use auth_field_set() to hash random user id with field "pkey" and write */
 	randombytes_buf(userid_bytes, sizeof userid_bytes);

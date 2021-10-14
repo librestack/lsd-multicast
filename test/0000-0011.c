@@ -4,6 +4,7 @@
 #include "test.h"
 #include "../modules/auth.h"
 #include "../src/config.h"
+#include "../src/lcdb.h"
 #include <librecast.h>
 #include <time.h>
 #include <unistd.h>
@@ -14,7 +15,7 @@ int main()
 	char dbpath[] = "0000-0011.tmp.XXXXXX";
 	config_include("./0000-0011.conf");
 	auth_init();
-	test_assert(lc_db_open(lctx, mkdtemp(dbpath)) == 0, "lc_db_open() - open temp db");
+	test_assert(lc_db_open(&env, mkdtemp(dbpath)) == 0, "lc_db_open() - open temp db");
 
 	unsigned char token[crypto_box_PUBLICKEYBYTES];
 	unsigned char seed[randombytes_SEEDBYTES];

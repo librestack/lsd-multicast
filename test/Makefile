@@ -4,7 +4,8 @@
 SHELL := /bin/bash
 CFLAGS += -Wall -g
 NOTOBJS := ../src/lsdbd.o ../src/keymgr.o
-OBJS := test.o ../src/lex.yy.o ../src/y.tab.o $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))
+TESTOBJS := test.o
+OBJS := $(filter-out $(NOTOBJS), $(wildcard ../src/*.o))
 LDFLAGS := -llibrecast -llsdb -llcdb -ldl
 BOLD := "\\e[0m\\e[2m"
 RESET := "\\e[0m"
@@ -16,7 +17,7 @@ LOGFILE := $(shell mktemp "lsdb-test-XXXXXXXX.log")
 TIMESTAMP = $(shell date +"%Y-%m-%d %H:%M:%S")
 VALGRIND = valgrind --leak-check=full --error-exitcode=2 --errors-for-leak-kinds=all --track-origins=yes --log-file=$@.valgrind
 
-.PHONY: test clean realclean build result check
+.PHONY: test clean realclean result check src modules
 
 check: MEMCHECK = $(VALGRIND)
 check: FAIL = $(LEAK)
@@ -25,13 +26,12 @@ check: test
 sanitize: CFLAGS += -fsanitize=address -fno-omit-frame-pointer
 sanitize: test
 
-test: clean build $(shell echo ????-????.c | sed 's/\.c/\.test/g') result
-
-build:
-	cd ../src && $(MAKE)
-	cd ../modules && $(MAKE)
+test: src modules $(TESTOBJS) $(shell echo ????-????.c | sed 's/\.c/\.test/g') result
 	@echo -e "$(TIMESTAMP) - starting tests" >> $(LOGFILE)
 	@echo -e "\nRunning tests"
+
+src modules:
+	$(MAKE) -C ../$@
 
 0000-0003.test: LDFLAGS += -pthread
 0000-0004.test: LDFLAGS += -lwolfssl
@@ -48,8 +48,8 @@ build:
 0000-0016.test: LDFLAGS += ../modules/auth.o -lsodium -lcurl
 0000-0017.test: LDFLAGS += ../modules/auth.o -lsodium -lcurl -pthread
 
-%.test: %.c $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+%.test: %.c src modules $(TESTOBJS)
+	@$(CC) $(CFLAGS) -o $@ $< $(TESTOBJS) $(OBJS) $(LDFLAGS)
 	@echo -ne "\e[2m" $* " "
 	@echo -ne "\n== $@" >> $(LOGFILE)
 	@$(MEMCHECK) ./$@ 2>> $(LOGFILE) && echo -e " $(PASS)" || echo -e " $(FAIL)"

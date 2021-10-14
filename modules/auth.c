@@ -3,11 +3,13 @@
 
 #include "auth.h"
 #include "../src/config.h"
+#include "../src/lcdb.h"
 #include "../src/log.h"
 #include "../src/wire.h"
 #include <assert.h>
 #include <curl/curl.h>
 #include <librecast.h>
+#include <lsdb.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -20,7 +22,8 @@
 #define FROM "noreply@librecast.net"
 
 lc_ctx_t *lctx;
-lc_db_t *lcdb;
+lsdb_env *env;
+lsdb_dbi *dbi;
 
 void hash_field(unsigned char *hash, size_t hashlen,
 		const char *key, size_t keylen,
@@ -41,13 +44,17 @@ lc_ctx_t *auth_init()
 		if (mkdir(h->dbpath, S_IRWXU) == -1 && errno != EEXIST) {
 			ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
 		}
-		lcdb = lc_db_open(lctx, h->dbpath);
+		if (lc_db_open(&env, h->dbpath)) {
+			lc_ctx_free(lctx);
+			lctx = NULL;
+		}
 	}
 	return lctx;
 }
 
 void auth_free()
 {
+	lsdb_env_close(env);
 	lc_ctx_free(lctx);
 }
 
@@ -56,7 +63,7 @@ int auth_field_del(char *key, size_t keylen, char *field, void *data, size_t dat
 	int ret = 0;
 	unsigned char hash[crypto_generichash_BYTES] = "";
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
-	if ((ret = lc_db_del(lcdb, config.handlers->dbname, hash, sizeof hash, data, datalen))) {
+	if ((ret = lc_db_del(env, config.handlers->dbname, hash, sizeof hash, data, datalen))) {
 		errno = ret;
 		ret = -1;
 	}
@@ -68,8 +75,8 @@ int auth_field_get(char *key, size_t keylen, char *field, void *data, size_t *da
 	int ret = 0;
 	unsigned char hash[crypto_generichash_BYTES] = "";
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
-	assert(lcdb);
-	if ((ret = lc_db_get(lcdb, config.handlers->dbname, hash, sizeof hash, data, datalen))) {
+	assert(env);
+	if ((ret = lc_db_get(env, config.handlers->dbname, hash, sizeof hash, data, datalen))) {
 		errno = ret;
 		ret = -1;
 	}
@@ -90,7 +97,8 @@ int auth_field_set(char *key, size_t keylen, const char *field, void *data, size
 {
 	unsigned char hash[crypto_generichash_BYTES];
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
-	return lc_db_set(lcdb, config.handlers->dbname, hash, sizeof hash, data, datalen);
+	assert(env);
+	return lc_db_set(env, config.handlers->dbname, hash, sizeof hash, data, datalen);
 }
 
 int auth_user_pass_set(char *userid, struct iovec *pass)
