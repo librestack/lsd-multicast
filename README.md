@@ -13,6 +13,16 @@ Modular Multicast Daemon.
 
 In development.  Pre-alpha.
 
+## Build & Install
+
+Dependencies:
+- librecast
+- libcurl
+- lsdb
+
+`make`
+`make install`
+
 ## Testing
 
 `sudo make net-setup` (`sudo make net-teardown` when finished)
