@@ -21,6 +21,7 @@ Dependencies:
 - lsdb
 
 `make`
+
 `make install`
 
 ## Testing
