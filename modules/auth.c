@@ -134,7 +134,7 @@ int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 	 * save that for the UI where we can give proper feedback */
 	if (!pass) pass = &nopass;
 #ifdef AUTH_TESTMODE
-	if (config.testmode) {
+	if (config.testmode || config.handlers->testmode) {
 		DEBUG("%s(): test mode enabled", __func__);
 		unsigned char seed[randombytes_SEEDBYTES];
 		memcpy(seed, mail->iov_base, randombytes_SEEDBYTES);
@@ -489,7 +489,7 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *iov, size_t iovlen)
 int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 {
 #ifdef AUTH_TESTMODE
-	if (config.testmode) {
+	if (config.testmode || config.handlers->testmode) {
 		DEBUG("%s(): test mode enabled", __func__);
 		unsigned char seed[randombytes_SEEDBYTES];
 		memcpy(seed, payload->senderkey.iov_base, randombytes_SEEDBYTES);
@@ -612,9 +612,8 @@ static void auth_op_user_add(lc_message_t *msg)
 
 	/* TODO: logfile entry */
 
-
 	DEBUG("emailing token");
-	if (!config.testmode) {
+	if (!config.testmode && !config.handlers->testmode) {
 		char *to = strndup(fields[mail].iov_base, fields[mail].iov_len);
 		char subject[] = "Librecast Live - Confirm Your Email Address";
 		if (auth_mail_token(subject, to, token.hextoken) == -1) {

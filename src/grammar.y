@@ -206,6 +206,14 @@ handler:
 		handler.scope = $2;
 	}
 	|
+	TESTMODE BOOL
+	{
+		if ($2) {
+			handler.testmode = 1;
+			fprintf(stderr, "handler test mode enabled\n");
+		}
+	}
+	|
 	TOKEN_DURATION NUMBER
 	{
 		fprintf(stderr, "token_duration = %i\n", $2);
