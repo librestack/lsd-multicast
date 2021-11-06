@@ -31,7 +31,7 @@ typedef struct module_s module_t;
 struct module_s {
 	char *          name;
 	void *          handle;
-	int (*		init)(config_t *c);
+	int (*		init)(config_t *, handler_t *);
 	void (*		finit)(void);
 	void (*		handle_msg)(lc_message_t *msg);
 	void (*		handle_err)(int);

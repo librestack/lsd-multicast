@@ -82,7 +82,7 @@ int config_modules_load(void)
 		}
 		*(void **)(&mod->handle_msg) = dlsym(mod->handle, "handle_msg");
 		if (!mod->handle_msg) continue;
-		if ((*(void **)(&mod->init) = dlsym(mod->handle, "init"))) mod->init(&config);
+		if ((*(void **)(&mod->init) = dlsym(mod->handle, "init"))) mod->init(&config, h);
 		*(void **)(&mod->finit) = dlsym(mod->handle, "finit");
 		*(void **)(&mod->handle_err) = dlsym(mod->handle, "handle_err");
 		mod++; i++;

@@ -21,6 +21,7 @@
 /* TODO: from config */
 #define FROM "noreply@librecast.net"
 
+handler_t *modhandler;
 lc_ctx_t *lctx;
 lsdb_env *env;
 lsdb_dbi *dbi;
@@ -39,7 +40,8 @@ void hash_field(unsigned char *hash, size_t hashlen,
 lc_ctx_t *auth_init()
 {
 	lctx = lc_ctx_new();
-	handler_t *h = config.handlers;
+	if (!modhandler) modhandler = config.handlers;
+	handler_t *h = modhandler;
 	if (h && h->dbpath) {
 		if (mkdir(h->dbpath, S_IRWXU) == -1 && errno != EEXIST) {
 			ERROR("can't create database path '%s': %s", h->dbpath, strerror(errno));
@@ -63,7 +65,7 @@ int auth_field_del(char *key, size_t keylen, char *field, void *data, size_t dat
 	int ret = 0;
 	unsigned char hash[crypto_generichash_BYTES] = "";
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
-	if ((ret = lc_db_del(env, config.handlers->dbname, hash, sizeof hash, data, datalen))) {
+	if ((ret = lc_db_del(env, modhandler->dbname, hash, sizeof hash, data, datalen))) {
 		errno = ret;
 		ret = -1;
 	}
@@ -76,7 +78,7 @@ int auth_field_get(char *key, size_t keylen, char *field, void *data, size_t *da
 	unsigned char hash[crypto_generichash_BYTES] = "";
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
 	assert(env);
-	if ((ret = lc_db_get(env, config.handlers->dbname, hash, sizeof hash, data, datalen))) {
+	if ((ret = lc_db_get(env, modhandler->dbname, hash, sizeof hash, data, datalen))) {
 		errno = ret;
 		ret = -1;
 	}
@@ -98,7 +100,9 @@ int auth_field_set(char *key, size_t keylen, const char *field, void *data, size
 	unsigned char hash[crypto_generichash_BYTES];
 	hash_field(hash, sizeof hash, key, keylen, field, strlen(field));
 	assert(env);
-	return lc_db_set(env, config.handlers->dbname, hash, sizeof hash, data, datalen);
+	assert(modhandler);
+	assert(modhandler->dbname);
+	return lc_db_set(env, modhandler->dbname, hash, sizeof hash, data, datalen);
 }
 
 int auth_user_pass_set(char *userid, struct iovec *pass)
@@ -134,7 +138,7 @@ int auth_user_create(char *userid, struct iovec *mail, struct iovec *pass)
 	 * save that for the UI where we can give proper feedback */
 	if (!pass) pass = &nopass;
 #ifdef AUTH_TESTMODE
-	if (config.testmode || config.handlers->testmode) {
+	if (config.testmode || modhandler->testmode) {
 		DEBUG("%s(): test mode enabled", __func__);
 		unsigned char seed[randombytes_SEEDBYTES];
 		memcpy(seed, mail->iov_base, randombytes_SEEDBYTES);
@@ -319,7 +323,8 @@ int auth_decode_packet_key(lc_message_t *msg, auth_payload_t *payload, unsigned 
 int auth_decode_packet(lc_message_t *msg, auth_payload_t *payload)
 {
 	unsigned char sk[crypto_box_SECRETKEYBYTES];
-	auth_key_crypt_sk_bin(sk, config.handlers->key_private);
+	if (!modhandler) modhandler = config.handlers;
+	auth_key_crypt_sk_bin(sk, modhandler->key_private);
 	return auth_decode_packet_key(msg, payload, sk);
 }
 
@@ -339,8 +344,8 @@ int auth_reply(struct iovec *repl, struct iovec *clientkey, struct iovec *data,
 	struct iovec payload[] = { iovkey, iovnon, crypted };
 	const size_t paylen = sizeof payload / sizeof payload[0];
 	struct iovec pkt = {0};
-	auth_key_crypt_pk_bin(authpubkey, config.handlers->key_public);
-	auth_key_crypt_sk_bin(authseckey, config.handlers->key_private);
+	auth_key_crypt_pk_bin(authpubkey, modhandler->key_public);
+	auth_key_crypt_sk_bin(authseckey, modhandler->key_private);
 	randombytes_buf(nonce, sizeof nonce);
 	if (crypto_box_easy(ciphertext, (unsigned char *)data->iov_base, data->iov_len,
 				nonce, clientkey->iov_base, authseckey) == -1)
@@ -455,7 +460,7 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *iov, size_t iovlen)
 	struct iovec pre[pre_count];
 	pre[0].iov_base = &expires;
 	pre[0].iov_len = sizeof expires;
-	expires = htobe64(time(NULL) + config.handlers->token_duration);
+	expires = htobe64(time(NULL) + modhandler->token_duration);
 	if (wire_pack_pre(&data, iov, iovlen, pre, pre_count) == -1) {
 		perror("wire_pack_pre()");
 		return -1;
@@ -467,7 +472,7 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *iov, size_t iovlen)
 		return -1;
 	}
 	DEBUG("unsigned token is %zu bytes", data.iov_len);
-	auth_key_sign_sk_bin(sk, config.handlers->key_private);
+	auth_key_sign_sk_bin(sk, modhandler->key_private);
 	if (crypto_sign(cap_sig, &tok_len, data.iov_base, data.iov_len, sk)) {
 		ERROR("crypto_sign() failed");
 		free(cap_sig);
@@ -489,7 +494,7 @@ int auth_serv_token_new(struct iovec *tok, struct iovec *iov, size_t iovlen)
 int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 {
 #ifdef AUTH_TESTMODE
-	if (config.testmode || config.handlers->testmode) {
+	if (config.testmode || modhandler->testmode) {
 		DEBUG("%s(): test mode enabled", __func__);
 		unsigned char seed[randombytes_SEEDBYTES];
 		memcpy(seed, payload->senderkey.iov_base, randombytes_SEEDBYTES);
@@ -499,7 +504,7 @@ int auth_user_token_new(auth_user_token_t *token, auth_payload_t *payload)
 #endif
 		randombytes_buf(token->token, sizeof token->token);
 	sodium_bin2hex(token->hextoken, AUTH_HEXLEN, token->token, sizeof token->token);
-	token->expires = htobe64((uint64_t)time(NULL) + config.handlers->usertoken_expires);
+	token->expires = htobe64((uint64_t)time(NULL) + modhandler->usertoken_expires);
 	DEBUG("token created: %s", token->hextoken);
 	return 0;
 }
@@ -613,7 +618,7 @@ static void auth_op_user_add(lc_message_t *msg)
 	/* TODO: logfile entry */
 
 	DEBUG("emailing token");
-	if (!config.testmode && !config.handlers->testmode) {
+	if (!config.testmode && !modhandler->testmode) {
 		char *to = strndup(fields[mail].iov_base, fields[mail].iov_len);
 		char subject[] = "Librecast Live - Confirm Your Email Address";
 		if (auth_mail_token(subject, to, token.hextoken) == -1) {
@@ -724,10 +729,12 @@ reply_to_sender:
 	if (!fields[user].iov_len) free(userid.iov_base);
 }
 
-void init(config_t *c)
+void init(config_t *c, handler_t *h)
 {
+	config.loglevel = 127;
 	TRACE("auth.so %s()", __func__);
 	if (c) config = *c;
+	if (h) modhandler = h;
 	DEBUG("I am the very model of a modern auth module");
 	auth_init();
 }
